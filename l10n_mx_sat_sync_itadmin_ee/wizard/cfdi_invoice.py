@@ -573,7 +573,7 @@ class CfdiInvoiceAttachment(models.TransientModel):
                 
         invoice_exist = invoice_obj.with_context(ctx).create(invoice_vals)
         #invoice_exist.compute_taxes()
-        action = self.env.ref('account.action_move_in_invoice_type')
+        action = self.env.ref('account.action_move_in_invoice_type').sudo()
         result = action.read()[0]
         res = self.env.ref('account.view_move_form', False)
         result['views'] = [(res and res.id or False, 'form')]

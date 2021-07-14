@@ -10,7 +10,7 @@ class ImportInvoiceProcessMessage(models.TransientModel):
     
     def show_created_invoices(self):
         create_invoice_ids = self._context.get('create_invoice_ids',[])
-        action = self.env.ref('account.action_move_in_invoice_type')
+        action = self.env.ref('account.action_move_in_invoice_type').sudo()
         result = action.read()[0]
         result['context'] = {'type': 'in_invoice'}
         result['domain'] = "[('id', 'in', " + str(create_invoice_ids) + ")]"

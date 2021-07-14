@@ -110,14 +110,14 @@ class IrAttachment(models.Model):
     def action_view_payments(self):
         payments = self.mapped('payment_ids')
         if payments and payments[0].payment_type=='outbound':
-            action = self.env.ref('account.action_account_payments_payable').read()[0]
+            action = self.env.ref('account.action_account_payments_payable').sudo().read()[0]
         else:
-            action = self.env.ref('account.action_account_payments').read()[0]
+            action = self.env.ref('account.action_account_payments').sudo().read()[0]
         
         if len(payments) > 1:
             action['domain'] = [('id', 'in', payments.ids)]
         elif len(payments) == 1:
-            action['views'] = [(self.env.ref('account.view_account_payment_form').id, 'form')]
+            action['views'] = [(self.env.ref('account.view_account_payment_form').sudo().id, 'form')]
             action['res_id'] = payments.ids[0]
         else:
             action = {'type': 'ir.actions.act_window_close'}
@@ -125,12 +125,12 @@ class IrAttachment(models.Model):
             
     def action_view_invoice(self):
         invoices = self.mapped('invoice_ids')
-        action = self.env.ref('account.action_move_out_invoice_type').read()[0]
+        action = self.env.ref('account.action_move_out_invoice_type').sudo().read()[0]
         if len(invoices) > 1:
             action['domain'] = [('id', 'in', invoices.ids)]
             action['view_mode'] = 'tree'
         elif len(invoices) == 1:
-            action['views'] = [(self.env.ref('account.view_move_form').id, 'form')]
+            action['views'] = [(self.env.ref('account.view_move_form').sudo().id, 'form')]
             action['res_id'] = invoices.ids[0]
         else:
             action = {'type': 'ir.actions.act_window_close'}
