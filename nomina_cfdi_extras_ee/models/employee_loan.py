@@ -57,16 +57,15 @@ class employee_loan(models.Model):
         
         for loan in self:
             if loan.start_date and loan.loan_type_id:
-                periodo_de_pago = self.loan_type_id.periodo_de_pago or ''
-                start_date =  self.start_date #datetime.strptime(self.start_date, '%Y-%m-%d')
+                periodo_de_pago = loan.loan_type_id.periodo_de_pago or ''
+                start_date =  loan.start_date #datetime.strptime(self.start_date, '%Y-%m-%d')
                 
                 if periodo_de_pago=='Semanal':
-                    end_date = start_date+relativedelta(weeks=self.term)
+                    end_date = start_date+relativedelta(weeks=loan.term)
                 elif periodo_de_pago=='Quincenal':
-                    end_date = self.get_quincenal_end_date(start_date, loan.term)
+                    end_date = loan.get_quincenal_end_date(start_date, loan.term)
                 else:
-                    end_date = start_date+relativedelta(months=self.term)
-
+                    end_date = start_date+relativedelta(months=loan.term)
                 loan.end_date = end_date.strftime("%Y-%m-%d")
             else:
                loan.end_date = datetime.today().strftime("%Y-%m-%d")
@@ -105,7 +104,7 @@ class employee_loan(models.Model):
     def is_ready_to_close(self):
         for loan in self:
             if loan.state == 'done':
-               if loan.remaing_amount <= 0:
+               if loan.remaing_amount <= 0.01:
                    loan.is_close = True
                else:
                    loan.is_close = False
