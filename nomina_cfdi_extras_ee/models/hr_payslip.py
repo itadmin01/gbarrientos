@@ -455,6 +455,7 @@ class HrPayslip(models.Model):
                moves = payslip.mapped('move_id')
                moves.filtered(lambda x: x.state == 'posted').button_cancel()
                payslip.write({'move_id': None})
+            payslip.write({'acum_fondo_ahorro': 0})
             #quitar los prestamos
             if payslip.installment_ids:
                 for installment in payslip.installment_ids:
