@@ -8,7 +8,7 @@ class AccountInvoice(models.Model):
         
     attachment_id = fields.Many2one("ir.attachment", 'Attachment')
     l10n_mx_edi_cfdi_uuid_cusom = fields.Char(string='Fiscal Folio UUID', copy=False, readonly=True, compute="_compute_cfdi_uuid", store=True)
-    hide_message = fields.Boolean(string='Hide Message', default=False)
+    hide_message = fields.Boolean(string='Hide Message', default=False, copy=False)
     
     @api.depends('edi_document_ids')
     def _compute_cfdi_uuid(self):
