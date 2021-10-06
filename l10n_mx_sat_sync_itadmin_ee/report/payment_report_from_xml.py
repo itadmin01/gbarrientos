@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import time
-from odoo import api, models
+from odoo import api, models, tools
+from lxml import etree
 import base64
 from lxml.objectify import fromstring
 
@@ -76,7 +77,7 @@ class ReportPaymentFromXMLFile(models.AbstractModel):
     
     @api.model
     def l10n_mx_edi_get_xml_etree(self, cfdi=None):
-        return fromstring(cfdi) if cfdi else None
+        return fromstring(base64.decodestring(cfdi)) if cfdi else None
     
     @api.model
     def l10n_mx_edi_get_tfd_etree(self, cfdi):
@@ -88,6 +89,11 @@ class ReportPaymentFromXMLFile(models.AbstractModel):
         return node[0] if node else None
     
     @api.model
+    def l10n_mx_edi_generate_cadena(self, xslt_path, cfdi_as_tree):
+        xslt_root = etree.parse(tools.file_open(xslt_path))
+        return str(etree.XSLT(xslt_root)(cfdi_as_tree))
+    
+    @api.model
     def _get_l10n_mx_edi_cadena(self, cfdi):
         
         #get the xslt path
@@ -97,7 +103,7 @@ class ReportPaymentFromXMLFile(models.AbstractModel):
         cfdi = self.l10n_mx_edi_get_xml_etree(cfdi)
         cfdi = self.l10n_mx_edi_get_tfd_etree(cfdi)
         #return the cadena
-        return self.env['account.move'].l10n_mx_edi_generate_cadena(xslt_path, cfdi)
+        return self.l10n_mx_edi_generate_cadena(xslt_path, cfdi)
     
     @api.model
     def _get_report_values(self, docids, data=None):
@@ -107,7 +113,7 @@ class ReportPaymentFromXMLFile(models.AbstractModel):
             'data': data,
             'docs': self.env['ir.attachment'].browse(docids),
             'time': time,
-            'base64': base64,
+            #'base64': base64,
             'round': round,
             'get_tax_amount': self.get_tax_amount,
             'l10n_mx_edi_amount_to_text': self.l10n_mx_edi_amount_to_text,

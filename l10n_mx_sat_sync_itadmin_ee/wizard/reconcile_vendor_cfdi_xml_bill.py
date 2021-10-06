@@ -41,11 +41,11 @@ class ReconcileVendorCfdiXmlBill(models.TransientModel):
         if not selected_att_ids or self._context.get('active_model','')!='ir.attachment':
             return
         
-        attachments = self.env['ir.attachment'].search([('id','in', selected_att_ids), ('creado_en_odoo','!=',True), ('cfdi_type','=', self.typo_de_combante)])
+        attachments = self.env['ir.attachment'].sudo().search([('id','in', selected_att_ids), ('creado_en_odoo','!=',True), ('cfdi_type','=', self.typo_de_combante)])
         
-        invoice_obj = self.env['account.move']
-        payment_obj = self.env['account.payment']
-        reconcile_obj = self.env['xml.invoice.reconcile']
+        invoice_obj = self.env['account.move'].sudo()
+        payment_obj = self.env['account.payment'].sudo()
+        reconcile_obj = self.env['xml.invoice.reconcile'].sudo()
         
         created_ids = []
         invoice_type, payment_type = '', ''
@@ -137,7 +137,7 @@ class ReconcileVendorCfdiXmlBill(models.TransientModel):
             action_id = 'l10n_mx_sat_sync_itadmin_ee.action_xml_payment_reconcile_view'
         else:
             action_id = 'l10n_mx_sat_sync_itadmin_ee.action_xml_invoice_reconcile_view'
-        action = self.env.ref(action_id).read()[0]
+        action = self.env.ref(action_id).sudo().read()[0]
         action['domain'] = [('id', 'in', created_ids)]
         action['context'] = {'invoice_type': invoice_type, 'payment_type': payment_type}
         return action

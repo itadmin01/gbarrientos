@@ -370,9 +370,9 @@ class CfdiInvoiceAttachment(models.TransientModel):
         invoice_exist = invoice_obj.with_context(ctx).create(invoice_vals)
         
         #invoice_exist.compute_taxes()
-        action = self.env.ref('account.action_move_out_invoice_type')
+        action = self.env.ref('account.action_move_out_invoice_type').sudo()
         result = action.read()[0]
-        res = self.env.ref('account.view_move_form', False)
+        res = self.env.ref('account.view_move_form', False).sudo()
         result['views'] = [(res and res.id or False, 'form')]
         result['res_id'] = invoice_exist.id
         return result
@@ -575,7 +575,7 @@ class CfdiInvoiceAttachment(models.TransientModel):
         #invoice_exist.compute_taxes()
         action = self.env.ref('account.action_move_in_invoice_type').sudo()
         result = action.read()[0]
-        res = self.env.ref('account.view_move_form', False)
+        res = self.env.ref('account.view_move_form', False).sudo()
         result['views'] = [(res and res.id or False, 'form')]
         result['res_id'] = invoice_exist.id
         return result
@@ -775,9 +775,9 @@ class CfdiInvoiceAttachment(models.TransientModel):
         invoice_exist = invoice_obj.with_context(ctx).create(invoice_vals)
         
         invoice_exist.compute_taxes()
-        action = self.env.ref('account.action_move_out_refund_type')
+        action = self.env.ref('account.action_move_out_refund_type').sudo()
         result = action.read()[0]
-        res = self.env.ref('account.view_move_form', False)
+        res = self.env.ref('account.view_move_form', False).sudo()
         result['views'] = [(res and res.id or False, 'form')]
         result['res_id'] = invoice_exist.id
         return result
@@ -960,9 +960,9 @@ class CfdiInvoiceAttachment(models.TransientModel):
                 invoice_vals.pop('line_ids')
         invoice_exist = invoice_obj.with_context(ctx).create(invoice_vals)
         #invoice_exist.compute_taxes()
-        action = self.env.ref('account.action_move_in_refund_type')
+        action = self.env.ref('account.action_move_in_refund_type').sudo()
         result = action.read()[0]
-        res = self.env.ref('account.view_move_form', False)
+        res = self.env.ref('account.view_move_form', False).sudo()
         result['views'] = [(res and res.id or False, 'form')]
         result['res_id'] = invoice_exist.id
         return result
@@ -1005,7 +1005,7 @@ class CfdiInvoiceAttachment(models.TransientModel):
                     tasa = str(amount_tasa)
                 else:
                     tasa = str(0)
-                tax_exist = tax_obj.search([('type_tax_use','=',tax_type),('l10n_mx_tax_type','=',tax.get('@TipoFactor')),('amount', '=', tasa)],limit=1)
+                tax_exist = tax_obj.search([('type_tax_use','=',tax_type), ('l10n_mx_tax_type','=',tax.get('@TipoFactor')), ('amount', '=', tasa), ('company_id','=',self.env.company.id)],limit=1)
                 if not tax_exist:
                     raise Warning("La factura contiene impuestos que no han sido configurados. Por favor configure los impuestos primero")
                 tax_ids.append(tax_exist.id)
@@ -1134,12 +1134,12 @@ class CfdiInvoiceAttachment(models.TransientModel):
             sale_line_obj.create(line_data)
             
         if sale_order_exist.state=='draft':
-            action = self.env.ref('sale.action_quotations')
+            action = self.env.ref('sale.action_quotations').sudo()
         else:
-            action = self.env.ref('sale.action_orders')
+            action = self.env.ref('sale.action_orders').sudo()
         result = action.read()[0]
         
-        res = self.env.ref('sale.view_order_form', False)
+        res = self.env.ref('sale.view_order_form', False).sudo()
         result['views'] = [(res and res.id or False, 'form')]
         result['res_id'] = sale_order_exist.id
         return result
@@ -1278,12 +1278,12 @@ class CfdiInvoiceAttachment(models.TransientModel):
             purchase_line_obj.create(line_data)
             
         if purchase_order_exist.state=='draft':
-            action = self.env.ref('purchase.purchase_rfq')
+            action = self.env.ref('purchase.purchase_rfq').sudo()
         else:
-            action = self.env.ref('purchase.purchase_form_action')
+            action = self.env.ref('purchase.purchase_form_action').sudo()
         result = action.read()[0]
         
-        res = self.env.ref('purchase.purchase_order_form', False)
+        res = self.env.ref('purchase.purchase_order_form', False).sudo()
         result['views'] = [(res and res.id or False, 'form')]
         result['res_id'] = purchase_order_exist.id
         return result

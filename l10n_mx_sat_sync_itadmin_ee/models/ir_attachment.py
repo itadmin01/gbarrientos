@@ -148,3 +148,7 @@ class IrAttachment(models.Model):
                 #attach.creado_en_odoo=False
             attach.write(vals)
         return True
+
+    def _read_group_allowed_fields(self):
+        return super(IrAttachment,self)._read_group_allowed_fields() + ['creado_en_odoo', 'date_cfdi', 'nombre_tercero', 'serie_folio', 'create_date', 'rfc_tercero', 'cfdi_uuid', 'cfdi_type', 'cfdi_total']
+
