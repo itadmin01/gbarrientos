@@ -1,0 +1,423 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* payment_conekta_oxoo
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 12.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-28 14:55+0000\n"
+"PO-Revision-Date: 2020-04-27 12:56-0500\n"
+"Last-Translator: <>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: \n"
+"Language: es_MX\n"
+"X-Generator: Poedit 2.3\n"
+
+#. module: payment_conekta_oxoo
+#: code:addons/payment_conekta_oxoo/models/payment_acquirer.py:155
+#, python-format
+msgid "; multiple order found"
+msgstr "; orden multiple encontrada"
+
+#. module: payment_conekta_oxoo
+#: code:addons/payment_conekta_oxoo/models/payment_acquirer.py:153
+#, python-format
+msgid "; no order found"
+msgstr "; orden no encontrada"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+msgid "<i class=\"fa fa-download\"/> Download Oxoo Receipt"
+msgstr "<i class=\"fa fa-download\"/> Descargar recibo de Oxxo"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+msgid "<i class=\"fa fa-print\"/> Print Oxoo Receipt"
+msgstr "<i class=\"fa fa-print\"/> Imprimir recibo de Oxxo"
+
+#. module: payment_conekta_oxoo
+#: model_terms:payment.acquirer,cancel_msg:payment_conekta_oxoo.payment_acquirer_conekta
+#: model_terms:payment.acquirer,cancel_msg:payment_conekta_oxoo.payment_acquirer_conekta_oxxo
+msgid "<span><i>Cancelar,</i> Su pago ha sido cancelado.</span>"
+msgstr "<span><i>Cancelar,</i> Su pago ha sido cancelado.</span>"
+
+#. module: payment_conekta_oxoo
+#: model_terms:payment.acquirer,error_msg:payment_conekta_oxoo.payment_acquirer_conekta
+#: model_terms:payment.acquirer,error_msg:payment_conekta_oxoo.payment_acquirer_conekta_oxxo
+msgid "<span><i>Error,</i> Tenga en cuenta que se produjo un error durante la transacción. El pedido ha sido confirmado pero no será pagado. No dude en contactarnos si tiene alguna pregunta sobre el estado de su pedido.</span>"
+msgstr "<span><i> Error,</i> Tenga en cuenta que se produjo un error durante la transacción. El pedido ha sido confirmado pero no será pagado. No dude en contactarnos si tiene alguna pregunta sobre el estado de su pedido.</span>"
+
+#. module: payment_conekta_oxoo
+#: model_terms:payment.acquirer,done_msg:payment_conekta_oxoo.payment_acquirer_conekta
+#: model_terms:payment.acquirer,done_msg:payment_conekta_oxoo.payment_acquirer_conekta_oxxo
+msgid "<span><i>Hecho,</i>Su pago en línea ha sido procesado con éxito. Gracias por su orden.</span>"
+msgstr "<span><i>Hecho,</i>Su pago en línea ha sido procesado con éxito. Gracias por su orden.</span>"
+
+#. module: payment_conekta_oxoo
+#: model_terms:payment.acquirer,pending_msg:payment_conekta_oxoo.payment_acquirer_conekta
+#: model_terms:payment.acquirer,pending_msg:payment_conekta_oxoo.payment_acquirer_conekta_oxxo
+msgid "<span><i>Pendiente,</i>Su pago en línea ha sido procesado con éxito. Pero su pedido no está validado aún.</span>"
+msgstr "<span><i>Pendiente,</i>Su pago en línea ha sido procesado con éxito. Pero su pedido no está validado aún.</span>"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.report_payment_transaction_document
+msgid "Amount due"
+msgstr "monto adeudado"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_account_payment__acquirer
+msgid "Aquirer"
+msgstr "Adquiridor"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.conekta_s2s_form
+msgid "CVC"
+msgstr "CVC"
+
+#. module: payment_conekta_oxoo
+#. openerp-web
+#: code:addons/payment_conekta_oxoo/static/src/js/conekta.js:291
+#, python-format
+msgid "Cannot set-up the payment"
+msgstr "No se puede configurar el pago."
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.conekta_s2s_form
+msgid "Card number"
+msgstr "Número de tarjeta"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.conekta_s2s_form
+msgid "Cardholder name"
+msgstr "Nombre del titular de la tarjeta"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_payment_acquirer__conekta_image
+#: model:payment.acquirer,name:payment_conekta_oxoo.payment_acquirer_conekta
+#: selection:payment.acquirer,provider:0
+msgid "Conekta"
+msgstr "Conekta"
+
+#. module: payment_conekta_oxoo
+#: model:payment.acquirer,name:payment_conekta_oxoo.payment_acquirer_conekta_oxxo
+msgid "Conekta Oxxo"
+msgstr "Conekta Oxxo"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_payment_acquirer__conekta_publishable_key
+msgid "Conekta Public Key"
+msgstr "Clave pública de Conekta"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_payment_acquirer__conekta_publishable_key_test
+msgid "Conekta Public Key Test"
+msgstr "Prueba de clave pública de Conekta"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_payment_acquirer__conekta_secret_key
+msgid "Conekta Secret Key"
+msgstr "Llave Secreta Conekta"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_payment_acquirer__conekta_secret_key_test
+msgid "Conekta Secret Key Test"
+msgstr "Prueba de clave secreta Conekta"
+
+#. module: payment_conekta_oxoo
+#: code:addons/payment_conekta_oxoo/models/payment_acquirer.py:331
+#, python-format
+msgid "Conekta gave us the following info about the problem: '%s'"
+msgstr "Conekta nos dio la siguiente información sobre el problema: '% s'"
+
+#. module: payment_conekta_oxoo
+#: selection:payment.acquirer,provider:0
+msgid "Conekta oxxo"
+msgstr "Conekta oxxo"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_payment_token__conekta_token
+msgid "Conekta token"
+msgstr "Conekta token"
+
+#. module: payment_conekta_oxoo
+#: code:addons/payment_conekta_oxoo/models/payment_acquirer.py:343
+#, python-format
+msgid "Conekta: %s orders found for reference %s"
+msgstr "Conekta: %s ordenes encontradas por referencia %s"
+
+#. module: payment_conekta_oxoo
+#: code:addons/payment_conekta_oxoo/models/payment_acquirer.py:339
+#, python-format
+msgid "Conekta: no order found for reference %s"
+msgstr "Conekta: orden no encontrada por referencia %s"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.report_payment_transaction_document
+msgid "Dictate the cashier the reference number on this stub."
+msgstr "Dicte al cajero el número de referencia en este talón."
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.report_payment_transaction_document
+msgid "Digital Stub. Printing is not necessary."
+msgstr "Parte digital. La impresión no es necesaria."
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+msgid "Download"
+msgstr "Descargar"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_account_payment__error
+msgid "Error"
+msgstr "Error"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.conekta_s2s_form
+msgid "Expires (MM / YY)"
+msgstr "Caduca (MM / AA)"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.report_payment_transaction_document
+msgid "Find it here"
+msgstr "Encuéntralo aquí"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.report_payment_transaction_document
+msgid "Go to the nearest OXXO store."
+msgstr "Vaya a la tienda OXXO más cercana."
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_account_payment__hide
+msgid "Hide"
+msgstr "Esconder"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.report_payment_transaction_document
+msgid "Instructions"
+msgstr "Instrucciones"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.report_payment_transaction_document
+msgid "Make the payment with cash."
+msgstr "Realizar el pago con efectivo"
+
+#. module: payment_conekta_oxoo
+#: selection:payment.acquirer,provider:0
+msgid "Manual Configuration"
+msgstr "Configuración manual"
+
+#. module: payment_conekta_oxoo
+#: model_terms:payment.acquirer,pre_msg:payment_conekta_oxoo.payment_acquirer_conekta_oxxo
+msgid "More information will be provided after choosing the payment method."
+msgstr "Se proporcionará más información después de elegir el método de pago."
+
+#. module: payment_conekta_oxoo
+#. openerp-web
+#: code:addons/payment_conekta_oxoo/static/src/js/conekta.js:303
+#, python-format
+msgid "No payment method selected"
+msgstr "Ningún método de pago seleccionado"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.report_payment_transaction_document
+msgid "OXXO will charge an additional fee at the time of payment."
+msgstr "OXXO cobrará una tarifa adicional al momento del pago."
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.report_payment_transaction_document
+msgid "OXXOPay"
+msgstr "OXXOPay"
+
+#. module: payment_conekta_oxoo
+#: model:ir.actions.report,name:payment_conekta_oxoo.action_report_payment_transaction
+msgid "Oxoo Payment receipt"
+msgstr "Recibo de pago de Oxoo"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_payment_transaction__conekta_oxxo_barcode
+msgid "Oxxo Barcode"
+msgstr "Código de Barras Oxxo"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_payment_transaction__conekta_oxxo_reference
+msgid "Oxxo Payment Reference"
+msgstr "Referencia de pago de Oxxo"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_payment_transaction__conekta_oxxo_expire_date
+msgid "Oxxo expire date"
+msgstr "Oxxo fecha de caducidad"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model,name:payment_conekta_oxoo.model_payment_acquirer
+msgid "Payment Acquirer"
+msgstr "Método de pago"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model,name:payment_conekta_oxoo.model_payment_token
+msgid "Payment Token"
+msgstr "Token de pago"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model,name:payment_conekta_oxoo.model_payment_transaction
+msgid "Payment Transaction"
+msgstr "Transacción de pago"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model,name:payment_conekta_oxoo.model_account_payment
+msgid "Payments"
+msgstr "Pagos"
+
+#. module: payment_conekta_oxoo
+#: code:addons/payment_conekta_oxoo/models/payment_acquirer.py:333
+#, python-format
+msgid "Perhaps the problem can be solved by double-checking your credit card details, or contacting your bank?"
+msgstr "¿Quizás el problema se pueda resolver verificando dos veces los datos de su tarjeta de crédito o comunicándose con su banco?"
+
+#. module: payment_conekta_oxoo
+#. openerp-web
+#: code:addons/payment_conekta_oxoo/static/src/js/conekta.js:304
+#, python-format
+msgid "Please select a payment method."
+msgstr "Por favor seleccione un método de pago."
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+msgid "Print"
+msgstr "Imprimir"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,field_description:payment_conekta_oxoo.field_payment_acquirer__provider
+msgid "Provider"
+msgstr "Proveedor"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.report_payment_transaction_document
+msgid "Reference"
+msgstr "Referencia"
+
+#. module: payment_conekta_oxoo
+#. openerp-web
+#: code:addons/payment_conekta_oxoo/static/src/js/conekta.js:217
+#: code:addons/payment_conekta_oxoo/static/src/js/conekta.js:232
+#: code:addons/payment_conekta_oxoo/static/src/js/conekta.js:276
+#: code:addons/payment_conekta_oxoo/static/src/js/conekta.js:282
+#, python-format
+msgid "Server Error"
+msgstr "Error del Servidor"
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.report_payment_transaction_document
+msgid "Tell the cashier that you want to make an <strong>OXXOPay</strong> payment."
+msgstr "Dígale al cajero que desea hacer un pago <strong> OXXOPay </strong>."
+
+#. module: payment_conekta_oxoo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.payment_confirmation_status_conekta_oxxo_website_sale
+#: model_terms:ir.ui.view,arch_db:payment_conekta_oxoo.report_payment_transaction_document
+msgid "To confirm your payment, the cashier will hand you a printed receipt. <strong>Check on it that it was performed correctly.</strong>"
+msgstr "Para confirmar su pago, el cajero le entregará un recibo impreso. <strong> Verifique que se haya realizado correctamente. </strong>"
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,help:payment_conekta_oxoo.field_payment_acquirer__conekta_image
+msgid "Visita linkaform.com"
+msgstr "Visita linkaform.com"
+
+#. module: payment_conekta_oxoo
+#. openerp-web
+#: code:addons/payment_conekta_oxoo/static/src/js/conekta.js:233
+#, python-format
+msgid "We are not able to add your payment method at the moment."
+msgstr "No es posible agregar tu método de pago en este momento"
+
+#. module: payment_conekta_oxoo
+#. openerp-web
+#: code:addons/payment_conekta_oxoo/static/src/js/conekta.js:277
+#, python-format
+msgid "We are not able to redirect you to the payment form."
+msgstr "No podemos redirigirlo al formulario de pago."
+
+#. module: payment_conekta_oxoo
+#. openerp-web
+#: code:addons/payment_conekta_oxoo/static/src/js/conekta.js:283
+#, python-format
+msgid "We are not able to redirect you to the payment form. "
+msgstr "No podemos redirigirlo al formulario de pago."
+
+#. module: payment_conekta_oxoo
+#. openerp-web
+#: code:addons/payment_conekta_oxoo/static/src/js/payment_processing.js:123
+#, python-format
+msgid "We are processing your payments, please wait ..."
+msgstr "Estamos procesando sus pagos, espere ..."
+
+#. module: payment_conekta_oxoo
+#: code:addons/payment_conekta_oxoo/models/payment_acquirer.py:329
+#, python-format
+msgid "We're sorry to report that the transaction has failed."
+msgstr "Lamentamos informar que la transacción ha fallado."
+
+#. module: payment_conekta_oxoo
+#. openerp-web
+#: code:addons/payment_conekta_oxoo/static/src/js/conekta.js:292
+#, python-format
+msgid "We're unable to process your payment."
+msgstr "No podemos procesar su pago."
+
+#. module: payment_conekta_oxoo
+#: selection:payment.acquirer,provider:0
+msgid "Wire Transfer"
+msgstr "Transferencia bancaria"
+
+#. module: payment_conekta_oxoo
+#: model_terms:payment.acquirer,pre_msg:payment_conekta_oxoo.payment_acquirer_conekta
+msgid "You will be prompt with conekta Payment page for payment information."
+msgstr "Se le indicará la página de pago de conekta para obtener información sobre el pago."
+
+#. module: payment_conekta_oxoo
+#. openerp-web
+#: code:addons/payment_conekta_oxoo/static/src/js/conekta.js:218
+#, python-format
+msgid "e.g. Your credit card details are wrong. Please verify."
+msgstr "p.ej. Los detalles de su tarjeta de crédito son incorrectos. Por favor verificar."
+
+#. module: payment_conekta_oxoo
+#: model:ir.model.fields,help:payment_conekta_oxoo.field_payment_token__conekta_token
+msgid "payment token from Conekta"
+msgstr "ficha de pago de Conekta"
+
+#. module: payment_conekta_oxoo
+#: code:addons/payment_conekta_oxoo/models/payment_acquirer.py:151
+#, python-format
+msgid "received data for reference %s"
+msgstr "datos recibidos para la referencia %s"
