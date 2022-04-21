@@ -37,7 +37,7 @@ class AccountPayment(models.Model):
                 #attachment = attachment[0]
 #                 datas = attachment_id._file_read(attachment_id.store_fname)
 #                 
-#                 tree = payment.l10n_mx_edi_get_xml_etree(base64.decodestring(datas))
+#                 tree = payment.l10n_mx_edi_get_xml_etree(base64.decodebytes(datas))
 #                 # if already signed, extract uuid
 #                 tfd_node = payment.l10n_mx_edi_get_tfd_etree(tree)
 #                 if tfd_node is not None:

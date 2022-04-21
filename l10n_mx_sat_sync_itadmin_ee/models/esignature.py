@@ -85,14 +85,14 @@ class ESignatureCertificate(models.Model):
         '''Get the current content in PEM format
         '''
         self.ensure_one()
-        return ssl.DER_cert_to_PEM_cert(base64.decodestring(content)).encode('UTF-8')
+        return ssl.DER_cert_to_PEM_cert(base64.decodebytes(content)).encode('UTF-8')
 
     @tools.ormcache('key', 'password')
     def get_pem_key(self, key, password):
         '''Get the current key in PEM format
         '''
         self.ensure_one()
-        return convert_key_cer_to_pem(base64.decodestring(key), password.encode('UTF-8'))
+        return convert_key_cer_to_pem(base64.decodebytes(key), password.encode('UTF-8'))
 
     def get_data(self):
         '''Return the content (b64 encoded) and the certificate decrypted

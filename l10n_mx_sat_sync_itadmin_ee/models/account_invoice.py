@@ -24,7 +24,7 @@ class AccountInvoice(models.Model):
                               ('res_model', '=', inv._name),
                               ('name', '=', results[0].name)]
                     
-                    attachment = inv.env['ir.attachment'].search(domain)[0]
+                    attachment = inv.env['ir.attachment'].search(domain,limit=1)
                     for edi in inv.edi_document_ids:
                         if not edi.attachment_id:
                             vals=({'attachment_id':attachment.id,'move_id':inv.id})

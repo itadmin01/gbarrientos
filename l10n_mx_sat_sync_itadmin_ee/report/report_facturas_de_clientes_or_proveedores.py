@@ -81,7 +81,7 @@ class Reportfacturas_de_clientes(models.AbstractModel):
     
     @api.model
     def l10n_mx_edi_get_xml_etree(self, cfdi=None):
-        return fromstring(base64.decodestring(cfdi)) if cfdi else None
+        return fromstring(base64.decodebytes(cfdi)) if cfdi else None
     
     @api.model
     def l10n_mx_edi_get_tfd_etree(self, cfdi):
@@ -91,19 +91,19 @@ class Reportfacturas_de_clientes(models.AbstractModel):
         namespace = {'tfd': 'http://www.sat.gob.mx/TimbreFiscalDigital'}
         node = cfdi.Complemento.xpath(attribute, namespaces=namespace)
         return node[0] if node else None
-    
+
     @api.model
     def l10n_mx_edi_generate_cadena(self, xslt_path, cfdi_as_tree):
         xslt_root = etree.parse(tools.file_open(xslt_path))
         return str(etree.XSLT(xslt_root)(cfdi_as_tree))
-    
+
     @api.model
     def _get_l10n_mx_edi_cadena(self, cfdi):
         
         #get the xslt path
         xslt_path = CFDI_XSLT_CADENA_TFD
         #get the cfdi as eTree
-        #cfdi = base64.decodestring(self.l10n_mx_edi_cfdi)
+        #cfdi = base64.decodebytes(self.l10n_mx_edi_cfdi)
         cfdi = self.l10n_mx_edi_get_xml_etree(cfdi)
         cfdi = self.l10n_mx_edi_get_tfd_etree(cfdi)
         #return the cadena
