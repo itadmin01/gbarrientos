@@ -95,19 +95,12 @@ class TablasPeriodoMensuallLine(models.Model):
                    ],
         string=_('Mes / Periodo'),)
     no_dias = fields.Float('Número de dias', store=True) 
-#    @api.multi
-    @api.onchange('dia_inicio', 'dia_fin')
-    def compute_dias(self):
-        if self.dia_fin and self.dia_inicio:
-           delta = self.dia_fin - self.dia_inicio
-           self.no_dias = delta.days + 1
 
     @api.onchange('dia_inicio', 'dia_fin')
     def compute_dias(self):
         if self.dia_fin and self.dia_inicio:
            delta = self.dia_fin - self.dia_inicio
            self.no_dias = delta.days + 1
-
 
 class TablasAnualISR(models.Model):
     _name = 'tablas.isr.anual'

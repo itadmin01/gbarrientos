@@ -1,0 +1,3376 @@
+"id","category_id/id","category_code","condition_select","condition_python","cuenta_especie/id","code","amount_python_compute","note","fondo_ahorro_aux","forma_pago","amount_fix","account_tax_id/id","integrar_al_ingreso","integrar_ptu","integrar_estatal","condition_range","variable_imss_monto","name","tipo_cotro_pago/id","parte_exenta/id","parte_gravada/id","exencion","variable_imss","amount_percentage","amount_percentage_base","sequence","variable_imss_tipo","tipo_cdeduccion/id","amount_select","tipo_cpercepcion/id"
+"hr_payroll.hr_rule_basic","hr_payroll.BASIC","BASIC","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","BASIC","result = contract.wage","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Basic Salary","","","","False","False","0.0","","1","Todo el monto","","Python Code",""
+"hr_payroll.hr_rule_taxable","hr_payroll.GROSS","GROSS","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","GROSS","result = categories.BASIC + categories.ALW","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Gross","","","","False","False","0.0","","100","Todo el monto","","Python Code",""
+"hr_payroll.hr_rule_net","hr_payroll.NET","NET","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","NET","result = categories.BASIC + categories.ALW + categories.DED","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Net Salary","","","","False","False","0.0","","200","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_1085_38cac23d","__export__.hr_salary_rule_category_7","ALW3","Python Expression","limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+work =  0
+
+if TPERG > 0:
+      work = 1
+
+if not payslip.nom_liquidacion and payslip.ultima_nomina and payslip.isr_ajustar and work > 0:
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+   line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+   if line2:
+      dias_periodo = line2.no_dias
+   else:
+      dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+   grabado_mensual = TPERG + payslip.acum_per_grav
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+      line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+   if line:
+      limite_inferior = line.lim_inf
+      cuota_fija = line.c_fija
+      porcentaje_sobre_excedente = line.s_excedente
+
+   if line3:
+      subsidio_empleo = line3.s_mensual
+
+   #articulo 113
+   excedente_limite_superior = grabado_mensual - limite_inferior
+   impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+   isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+   op_isr_ajuste = 0
+   op_ajuste_subem_causado = 0
+   op_ajuste_subem = 0
+   desc_dev_isr = 0
+   desc_isr_ret_subem_entregado = 0
+   desc_dev_subem = 0
+   subem_entregar =  0
+   factor01 = 0
+   isr_retener = 0
+
+   if isr_tarifa_113 > subsidio_empleo:
+      isr_retener = isr_tarifa_113 - subsidio_empleo
+      isr_retener = isr_retener - payslip.acum_isr
+      if payslip.acum_subsidio_aplicado > 0 and subsidio_empleo == 0:
+          if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+             desc_isr_ret_subem_entregado = payslip.acum_isr_antes_subem
+             desc_dev_subem = payslip.acum_subsidio_aplicado - payslip.acum_isr_antes_subem
+          else:
+             desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado
+          if subsidio_empleo == 0:
+             if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+                op_isr_ajuste = payslip.acum_isr_antes_subem
+             else:
+                op_isr_ajuste = payslip.acum_subsidio_aplicado
+             if payslip.acum_subsidio_aplicado > 0:
+                op_ajuste_subem_causado =  payslip.acum_subsidio_aplicado
+      else:
+         result = 0
+   else:
+      if subsidio_empleo - isr_tarifa_113  < payslip.acum_isr:
+          subem_entregar = payslip.acum_isr
+
+   if isr_retener - op_isr_ajuste < 0 or subem_entregar > 0 or (subsidio_empleo > isr_tarifa_113 and payslip.acum_isr > 0):
+     result = 1
+   else:
+     result = 0
+else:
+   result = 0","","O007","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+if line2:
+   dias_periodo = line2.no_dias
+else:
+   dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+grabado_mensual = TPERG + payslip.acum_per_grav
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+if line:
+    limite_inferior = line.lim_inf
+    cuota_fija = line.c_fija
+    porcentaje_sobre_excedente = line.s_excedente
+
+if line3:
+    subsidio_empleo = line3.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+op_isr_ajuste = 0
+op_ajuste_subem_causado = 0
+op_ajuste_subem = 0
+desc_dev_isr = 0
+desc_isr_ret_subem_entregado = 0
+desc_dev_subem = 0
+subem_entregar =  0
+factor01 = 0
+isr_retener = 0
+
+if isr_tarifa_113 > subsidio_empleo:
+   isr_retener = isr_tarifa_113 - subsidio_empleo
+   isr_retener = isr_retener - payslip.acum_isr
+   if payslip.acum_subsidio_aplicado > 0 and subsidio_empleo == 0:
+       if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+          desc_isr_ret_subem_entregado = payslip.acum_isr_antes_subem
+          desc_dev_subem = payslip.acum_subsidio_aplicado - payslip.acum_isr_antes_subem
+       else:
+          desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado
+       if subsidio_empleo == 0:
+          if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+             op_isr_ajuste = payslip.acum_isr_antes_subem
+          else:
+             op_isr_ajuste = payslip.acum_subsidio_aplicado
+          if payslip.acum_subsidio_aplicado > 0:
+             op_ajuste_subem_causado =  payslip.acum_subsidio_aplicado
+   else:
+      result = 0
+else:
+      if subsidio_empleo - isr_tarifa_113  < payslip.acum_isr:
+          subem_entregar = payslip.acum_isr
+      elif  subsidio_empleo > isr_tarifa_113 and payslip.acum_isr > 0:
+          subem_entregar = payslip.acum_isr
+
+if isr_retener - op_isr_ajuste < 0:
+   result = round(abs(isr_retener - op_isr_ajuste),2)
+else:
+   result = round(abs(subem_entregar),2)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Devolución ISR","catalogo.otropago01","","","False","False","0.0","","425","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_1091_33bc0404","__export__.hr_salary_rule_category_7","ALW3","Python Expression","if payslip.isr_anual and payslip.isr_ajustar:
+   result = 1
+else:
+   result = 0","","O008","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+limite_inferior2 = 0
+cuota_fija2 = 0
+porcentaje_sobre_excedente2 = 0
+grabado_anual = 0
+grabado_mensual = 0
+
+if worked_days.WORK100:
+   dias_laborados = worked_days.WORK100.number_of_days
+if worked_days.FJC:
+   dias_laborados = dias_laborados + worked_days.FJC.number_of_days
+if worked_days.VAC:
+   dias_laborados = dias_laborados + worked_days.VAC.number_of_days
+if worked_days.SEPT:
+   dias_laborados = dias_laborados + worked_days.SEPT.number_of_days
+
+isr_anual = 0
+isr_acum_anual = 0
+subsidio_x_aplicar = 0
+##################subsidio mensual##############################
+#gravado mensual
+grabado_mensual = TPERG * (365/12/16) #+ payslip.acum_per_grav 
+if contract.tablas_cfdi_id:
+   line3 = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+   if line3:
+       limite_inferior2 = line3.lim_inf
+       cuota_fija2 = line3.c_fija
+       porcentaje_sobre_excedente2 = line3.s_excedente
+   line4 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+   if line4:
+       subsidio_empleo2 = line4.s_mensual
+
+subsidio_x_aplicar = subsidio_empleo2 / (365/12/16) # - payslip.acum_subsidio_aplicado
+
+######################### Calculo ISR anual #############################
+grabado_anual = TPERG + payslip.acum_per_grav_anual
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.isr.anual'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_anual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+	   
+#articulo 113
+excedente_limite_superior = grabado_anual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+sub_apl_anual = payslip.acum_subsidio_aplicado_anual -  payslip.acum_dev_subem - payslip.acum_dev_subem_entregado  + subsidio_x_aplicar
+  
+isr_ret_anual =  payslip.acum_isr_anual + payslip.acum_isr_ajuste - payslip.acum_dev_isr
+
+isr_anual = isr_tarifa_113 - isr_ret_anual - sub_apl_anual
+
+if isr_anual < 0 and isr_tarifa_113>sub_apl_anual:
+   result =  abs(isr_anual)
+else:
+   result =  0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Devolucion ISR anual","catalogo.otropago05","","","False","False","0.0","","430","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_1086_0bbe0f70","hr_payroll.DED","DED","Python Expression","if payslip.isr_anual and payslip.isr_ajustar:
+   result = 1
+else:
+   result = 0","","ISR2","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+limite_inferior2 = 0
+cuota_fija2 = 0
+porcentaje_sobre_excedente2 = 0
+grabado_anual = 0
+grabado_mensual = 0
+
+if worked_days.WORK100:
+   dias_laborados = worked_days.WORK100.number_of_days
+if worked_days.FJC:
+   dias_laborados = dias_laborados + worked_days.FJC.number_of_days
+if worked_days.VAC:
+   dias_laborados = dias_laborados + worked_days.VAC.number_of_days
+if worked_days.SEPT:
+   dias_laborados = dias_laborados + worked_days.SEPT.number_of_days
+
+isr_anual = 0
+isr_acum_anual = 0
+subsidio_x_aplicar = 0
+##################subsidio mensual##############################
+#gravado mensual
+grabado_mensual = TPERG * (365/12/16) #+ payslip.acum_per_grav 
+if contract.tablas_cfdi_id:
+   line3 = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+   if line3:
+       limite_inferior2 = line3.lim_inf
+       cuota_fija2 = line3.c_fija
+       porcentaje_sobre_excedente2 = line3.s_excedente
+   line4 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+   if line4:
+       subsidio_empleo2 = line4.s_mensual
+
+subsidio_x_aplicar = subsidio_empleo2 / (365/12/16)
+
+######################### Calculo ISR anual #############################
+grabado_anual = TPERG + payslip.acum_per_grav_anual
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.isr.anual'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_anual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+	   
+#articulo 113
+excedente_limite_superior = grabado_anual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+sub_apl_anual = payslip.acum_subsidio_aplicado_anual -  payslip.acum_dev_subem - payslip.acum_dev_subem_entregado + subsidio_x_aplicar
+  
+isr_ret_anual =  payslip.acum_isr_anual + payslip.acum_isr_ajuste - payslip.acum_dev_isr
+
+isr_anual = isr_tarifa_113 - isr_ret_anual - sub_apl_anual
+
+if isr_anual > 0:
+   result =  isr_anual
+else:
+   result =  0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR quincenal (sp) anual","","","","False","False","0.0","","5","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_1090_d5e2271d","hr_payroll.DED","DED","Python Expression","if payslip.isr_anual and payslip.isr_ajustar:
+   result = 1
+else:
+   result = 0","","ISR2","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_anual = 0
+
+if worked_days.WORK100:
+   dias_laborados = worked_days.WORK100.number_of_days
+if worked_days.FJC:
+   dias_laborados = dias_laborados + worked_days.FJC.number_of_days
+if worked_days.VAC:
+   dias_laborados = dias_laborados + worked_days.VAC.number_of_days
+if worked_days.SEPT:
+   dias_laborados = dias_laborados + worked_days.SEPT.number_of_days
+
+#grabado_anual
+grabado_anual = TPERG + payslip.acum_per_grav_anual + payslip.percepcion_gravada_proyectado
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.isr.anual'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_anual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_anual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_anual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+isr_anual = 0
+#subsidio mensual
+#isr_anual = isr_tarifa_113 - payslip.acum_isr_anual - payslip.acum_subsidio_aplicado_anual - #payslip.isr_proyectado * 2
+
+#if isr_anual > 0:
+#   result = isr_anual
+#else:
+#   result = 0
+
+#subsidio mensual
+if subsidio_empleo > 0:
+   subsidio_pagado = isr_tarifa_113 - abs(payslip.acum_isr_antes_subem_anual)  - subsidio_empleo + abs(payslip.acum_subsidio_aplicado_anual)
+else:
+   subsidio_pagado = isr_tarifa_113 - abs(payslip.acum_isr_antes_subem_anual)  - subsidio_empleo - abs(payslip.acum_isr_anual) - payslip.dev_acum_isr + payslip.acum_isr_ajuste
+   total = isr_tarifa_113 - payslip.acum_isr_anual - payslip.isr_proyectado - payslip.dev_acum_isr + payslip.acum_isr_ajuste
+   total2 =  subsidio_pagado
+
+if subsidio_pagado < 0:
+   result = 0
+else:
+   if total > 0:
+      result = abs(total)
+   else:
+      result = abs(total2)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR quincenal (sp) aguinaldo","","","","False","False","0.0","","5","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_315_22fc6cd6","hr_payroll.ALW","ALW","Python Expression","if worked_days.WORK100:
+   result = 1>0
+else:
+   result = 0>1","","P001","dias_laborados = 0
+
+if worked_days.WORK100:
+   dias_laborados = worked_days.WORK100.number_of_days
+if worked_days.FJC:
+   dias_laborados = dias_laborados + worked_days.FJC.number_of_days
+
+result = contract.sueldo_diario*dias_laborados
+
+if inputs.P001:
+   result = inputs.P001.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Sueldo base","","","","False","False","0.0","","100","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_9","hr_payroll.ALW","ALW","Python Expression","if worked_days.SEPT:
+   result = 1
+else:
+   result = 0","","P005","dias_laborados = 0
+
+if worked_days.SEPT:
+   result = worked_days.SEPT.number_of_days * contract.sueldo_diario
+else:
+  result = 0","","False","Efectivo","10.0","","","False","False","contract.wage","0.0","Septimo dia","","","","False","False","0.0","","102","Todo el monto","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_139_6b02665e","hr_payroll.ALW","ALW","Python Expression","if contract.periodicidad_pago ==""02"":
+   result = 1> 0
+else:
+   result = 0> 1","","P003","dias_laborados = 0
+
+if contract.dias_pendientes_pagar > 0 :
+  dias_laborados = contract.dias_pendientes_pagar
+  result = 1/6 *contract.sueldo_diario*dias_laborados
+else:
+  result = 0","","False","Efectivo","10.0","","","False","False","contract.wage","0.0","Septimo dia liquidación","","","","False","False","0.0","","103","Todo el monto","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_372_05b6bc3c","hr_payroll.ALW","ALW","Python Expression","if inputs.P002:
+   result = 1
+else:
+   result = 0","","P002","result = inputs.P002.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Días adicionales","","","","False","False","0.0","","105","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_131_246ebffd","hr_payroll.ALW","ALW","Python Expression","if worked_days.HEX2:
+   result = 1>0
+else:
+   result = 0>1","","HEX2","result =  PE003 + PG003","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Horas extras dobles","","__export__.hr_salary_rule_300_10e13f2f","__export__.hr_salary_rule_298_a1ef148b","True","False","0.0","","112","Todo el monto","","Python Code","catalogo.percepciones14"
+"__export__.hr_salary_rule_83_1a3f51f8","hr_payroll.ALW","ALW","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","P004","result =  PE004 + PG004","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Aguinaldo","","__export__.hr_salary_rule_219_73008d2c","__export__.hr_salary_rule_218_425e2a23","True","False","0.0","","117","Todo el monto","","Python Code","catalogo.percepciones02"
+"__export__.hr_salary_rule_183_0e63481e","hr_payroll.ALW","ALW","Python Expression","if worked_days.AGUI:
+   result = 1
+else:
+   result = 0","","P004","result =  PE004 + PG004","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Aguinaldo liquidacion","","__export__.hr_salary_rule_182_8ebcd470","__export__.hr_salary_rule_626","True","False","0.0","","117","Todo el monto","","Python Code","catalogo.percepciones02"
+"__export__.hr_salary_rule_373_705a4fee","hr_payroll.ALW","ALW","Python Expression","if inputs.P008:
+   result = 1
+else:
+   result = 0","","P008","result = inputs.P008.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Devolución descuento","","","","False","False","0.0","","125","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_10","hr_payroll.ALW","ALW","Python Expression","if worked_days.VAC:
+   result = 1 > 0
+else:
+   result = 0 > 1","","P009","total = 0
+dias_vacaciones = 0
+
+if contract.antiguedad_anos < 1:
+   antiguedad = 1
+else:
+   antiguedad = contract.antiguedad_anos
+
+line = contract.env['tablas.antiguedades.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('antiguedad','<=',antiguedad)],order='antiguedad desc',limit=1)
+
+if line:
+   result = round(worked_days.VAC.number_of_days * contract.sueldo_diario,2)
+else:
+   result = 0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Vacaciones","","","","False","False","0.0","","130","Todo el monto","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_90_12f632dc","hr_payroll.ALW","ALW","Python Expression","if worked_days.VAC:
+   result = 1
+else:
+   result = 0","","P009","dias_laborados = 0
+
+if worked_days.VAC:
+   dias_laborados = worked_days.VAC.number_of_days
+
+result = contract.sueldo_diario*dias_laborados","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Vacaciones liquidación","","","","False","False","0.0","","131","Todo el monto","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_19","hr_payroll.ALW","ALW","Python Expression","if worked_days.VAC  and contract.tipo_prima_vacacional == '02' and not payslip.nom_liquidacion:
+   result = 1
+else:
+   result = 0","","P010","result = PG010 + PE010","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Prima vacacional","","__export__.hr_salary_rule_192_2bff710f","__export__.hr_salary_rule_193_3f9725ab","True","False","25.0","103","137","Todo el monto","","Python Code","catalogo.percepciones16"
+"__export__.hr_salary_rule_91_a7667348","hr_payroll.ALW","ALW","Python Expression","if worked_days.PVC:
+   result = 1
+else:
+   result = 0","","P010","result = PG010 + PE010","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Prima vacacional liquidación","","__export__.hr_salary_rule_624","__export__.hr_salary_rule_625","True","False","25.0","103","137","Todo el monto","","Python Code","catalogo.percepciones16"
+"__export__.hr_salary_rule_133_e4e4cdb2","hr_payroll.ALW","ALW","Python Expression","if worked_days.PVC:
+   result = 1
+else:
+   result = 0","","P010","result = PG010 + PE010","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Prima vacacional completo","","__export__.hr_salary_rule_194_d2ea3bcc","__export__.hr_salary_rule_195_fafa384e","True","False","25.0","103","137","Todo el monto","","Python Code","catalogo.percepciones16"
+"__export__.hr_salary_rule_20","hr_payroll.ALW","ALW","Python Expression","if inputs.PTU:
+   result = 1
+else:
+   result = 0","","P011","result = PG011 + PE011","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Reparto de utilidades","","__export__.hr_salary_rule_313_cf74a2d6","__export__.hr_salary_rule_314_a0dd8356","True","False","0.0","","142","Todo el monto","","Python Code","catalogo.percepciones03"
+"__export__.hr_salary_rule_16","hr_payroll.ALW","ALW","Python Expression","if inputs.P013:
+   result = 1
+else:
+   result = 0","","P013","result = inputs.P013.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Gratificación","","","","False","False","0.0","","145","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_32","hr_payroll.ALW","ALW","Python Expression","if contract.bono_asistencia:
+   result = 1
+else:
+   result =  0","","P015","result = P001 * contract.bono_asistencia_amount/100","","False","Efectivo","60.0","","","False","False","contract.wage","0.0","Premio por asistencia","","","","False","False","0.0","","150","Todo el monto","","Python Code","catalogo.percepciones40"
+"__export__.hr_salary_rule_33","hr_payroll.ALW","ALW","Python Expression","if contract.bono_puntualidad:
+   result = 1
+else:
+   result =  0","","P016","result = P001 * 0.10","","False","Efectivo","140.0","","","False","False","contract.wage","0.0","Premio de puntualidad","","","","False","False","0.0","","150","Todo el monto","","Python Code","catalogo.percepciones08"
+"__export__.hr_salary_rule_376_9f0b8438","hr_payroll.ALW","ALW","Python Expression","if inputs.P017:
+   result = 1
+else:
+   result = 0","","P017","result = inputs.P017.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Diferencia de sueldo","","","","False","False","0.0","","160","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_31","hr_payroll.ALW","ALW","Python Expression","if worked_days.PDM or worked_days.P019:
+   result = 1
+else:
+   result = 0","","P019","result = PE019 + PG019","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Prima dominical","","__export__.hr_salary_rule_190_bc0b85aa","__export__.hr_salary_rule_191_e9d15494","True","False","0.0","","167","Todo el monto","","Python Code","catalogo.percepciones15"
+"__export__.hr_salary_rule_377_65184cab","hr_payroll.ALW","ALW","Python Expression","if inputs.P020:
+   result = 1
+else:
+   result = 0","","P020","result = inputs.P020.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Dev. incentivo punt. o asist.","","","","False","False","0.0","","170","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_199_dad2f71a","hr_payroll.ALW","ALW","Python Expression","if worked_days.DFES or worked_days.DFES_3:
+   result = 1
+else:
+   result = 0","","P022","result =  P022E + P022G","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Descanso-Festivo laborado","","__export__.hr_salary_rule_411_94565970","__export__.hr_salary_rule_412_d86f119e","True","False","0.0","","177","Todo el monto","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_378_cb65429a","hr_payroll.ALW","ALW","Python Expression","if inputs.P023:
+   result = 1
+else:
+   result = 0","","P023","result = inputs.P023.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Dev. Infonavit","","","","False","False","0.0","","180","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_379_21289af2","hr_payroll.ALW","ALW","Python Expression","if inputs.P025:
+   result = 1
+else:
+   result = 0","","P025","result = inputs.P025.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Devolución x desc. falta","","","","False","False","0.0","","185","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_380_950c9b5d","hr_payroll.ALW","ALW","Python Expression","if inputs.P028:
+   result = 1
+else:
+   result = 0","","P028","result = inputs.P028.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Vacaciones económicas","","","","False","False","0.0","","190","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_381_25724f62","hr_payroll.ALW","ALW","Python Expression","if inputs.P030:
+   result = 1
+else:
+   result = 0","","P030","result = inputs.P030.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Diferencia sueldo qna. anterior","","","","False","False","0.0","","195","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_382_3ed19afc","hr_payroll.ALW","ALW","Python Expression","if inputs.P033:
+   result = 1
+else:
+   result = 0","","P033","result = inputs.P033.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Dev. caja de ahorro","","","","False","False","0.0","","200","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_383_2ed3a24a","hr_payroll.ALW","ALW","Python Expression","if inputs.P034:
+   result = 1
+else:
+   result = 0","","P034","result = inputs.P034.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Préstamo caja de ahorro","","","","False","False","0.0","","205","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_64_51ca39bc","hr_payroll.ALW","ALW","Python Expression","if contract.vale_despensa:
+   result = 1
+else:
+   if inputs.DESP:
+      if inputs.DESP.amount > 0:
+         result = 1
+      else:
+         result = 0
+   else:
+      result = 0","","P036","result = PE036 + PG036
+
+# Tope exento ISR 1 uma por dia
+# tope exento IMSS .4 uma por dia","","False","Especie","211.37","","","False","False","contract.wage","0.0","Vale de despensa","","__export__.hr_salary_rule_197_f64ea9e5","__export__.hr_salary_rule_196_a17ebdba","True","False","0.0","","212","Todo el monto","","Python Code","catalogo.percepciones24"
+"__export__.hr_salary_rule_178_3964d4db","hr_payroll.ALW","ALW","Python Expression","if inputs.P037:
+   if inputs.P037.amount > 0:
+      result = 1
+   else:
+      result = 0","","P037","if inputs.P037:
+   if payslip.retardo:
+      result = 0
+   else:
+      result = inputs.P037.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Bono por desempeño","","","","False","False","0.0","","215","Todo el monto","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_181_17fd119b","hr_payroll.ALW","ALW","Python Expression","if inputs.P040:
+   if inputs.P040.amount > 0:
+      result = 1
+   else:
+      result = 0","","P040","result = PE040","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Viaticos","","","","False","False","0.0","","222","Todo el monto","","Python Code","catalogo.percepciones41"
+"__export__.hr_salary_rule_213_7db74dd8","hr_payroll.ALW","ALW","Python Expression","if inputs.IND:
+   result =  1
+else:
+   result = 0","","P103","result = PE103 + PG103
+","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Indemnización","","__export__.hr_salary_rule_17","__export__.hr_salary_rule_212_54b36a45","True","False","0.0","","232","Todo el monto","","Python Code","catalogo.percepciones20"
+"__export__.hr_salary_rule_217_61f36af9","hr_payroll.ALW","ALW","Python Expression","if inputs.PDA:
+   result =  1
+else:
+   result = 0","","P104","result = PE104 + PG104","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Prima de antiguedad","","__export__.hr_salary_rule_18","__export__.hr_salary_rule_216_9bcae126","True","False","0.0","","237","Todo el monto","","Python Code","catalogo.percepciones17"
+"__export__.hr_salary_rule_215_d6327333","hr_payroll.ALW","ALW","Python Expression","if inputs.PPS:
+   result =  1
+else:
+   result = 0","","P105","result = PE105 + PG105","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Pagos por separación","","__export__.hr_salary_rule_138_4e8fdd73","__export__.hr_salary_rule_214_ac3e9608","True","False","0.0","","242","Todo el monto","","Python Code","catalogo.percepciones18"
+"__export__.hr_salary_rule_385_364c9e80","hr_payroll.ALW","ALW","Python Expression","if inputs.P200:
+   result = 1
+else:
+   result = 0","","P200","result = inputs.P200.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Préstamo personal","","","","False","False","0.0","","245","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_386_25e7b446","hr_payroll.ALW","ALW","Python Expression","if inputs.P201:
+   result = 1
+else:
+   result = 0","","P201","result = inputs.P201.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Permiso por alumbramiento","","","","False","False","0.0","","250","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_387_01a64d90","hr_payroll.ALW","ALW","Python Expression","if inputs.P202:
+   result = 1
+else:
+   result = 0","","P202","result = inputs.P202.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Permiso por defunción","","","","False","False","0.0","","255","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_388_552b712c","hr_payroll.ALW","ALW","Python Expression","if inputs.P203:
+   result = 1
+else:
+   result = 0","","P203","result = inputs.P203.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Permiso por matrimonio","","","","False","False","0.0","","260","","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_86_d3335d9c","hr_payroll.ALW","ALW","Python Expression","if inputs.P204:
+   if inputs.P204.amount > 0:
+      result = 1
+   else:
+      result = 0","","P204","if inputs.P204:
+   result = inputs.P204.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Comisiones","","","","False","False","0.0","","265","Todo el monto","","Python Code","catalogo.percepciones23"
+"__export__.hr_salary_rule_87_ca7560d9","hr_payroll.ALW","ALW","Python Expression","if inputs.P205:
+   if inputs.P205.amount > 0:
+      result = 1
+   else:
+      result = 0","","P205","if inputs.P205:
+   result = inputs.P205.amount
+else:
+   result = 0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Compensaciones","","","","False","False","0.0","","270","Todo el monto","","Python Code","catalogo.percepciones33"
+"__export__.hr_salary_rule_123_34d825c6","hr_payroll.ALW","ALW","Python Expression","if contract.bono_puntualidad:
+   result = 1
+else:
+   result =  0","","P206","result = P001 * contract.bono_puntualidad_amount / 100","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Incentivo de productividad","","","","False","False","0.0","","275","Todo el monto","","Python Code","catalogo.percepciones33"
+"__export__.hr_salary_rule_307_a7c34c4e","hr_payroll.ALW","ALW","Python Expression","if contract.percepcion_adicional and payslip.no_nomina == '2':
+   result = 1
+else:
+   result = 0","","P208","result =  contract.percepcion_adicional.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Percepcion adicional","","","","True","False","0.0","","285","Todo el monto","","Python Code","catalogo.percepciones35"
+"__export__.hr_salary_rule_170_50c18641","hr_payroll.ALW","ALW","Python Expression","if contract.alimentacion:
+   result = 1
+else:
+   result = 0","","P209","result = P001 * contract.alimentacion_amount / 100","","False","Especie","0.0","","","False","False","contract.wage","0.0","Alimentación","","","","False","False","0.0","","290","Todo el monto","","Python Code","catalogo.percepciones24"
+"__export__.hr_salary_rule_148_c0efbcdb","hr_payroll.ALW","ALW","Python Expression","if worked_days.WORK100 and contract.fondo_ahorro:
+   result = 1
+else:
+   result = 0","","P041","result = PE041 + PG041","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Fondo ahorro empresa","","__export__.hr_salary_rule_188_802f2800","__export__.hr_salary_rule_189_4e1017bc","True","False","0.0","","297","Todo el monto","","Python Code","catalogo.percepciones05"
+"__export__.hr_salary_rule_415_b5c6383d","hr_payroll.ALW","ALW","Python Expression","if worked_days.HEX1:
+   result = 1
+else:
+   result = 0","","HEX1","result = PE006 + PG006
+","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Horas extras simples","","__export__.hr_salary_rule_413_369bcc37","__export__.hr_salary_rule_414_6c22f0ea","True","False","0.0","","297","Todo el monto","","Python Code","catalogo.percepciones14"
+"__export__.hr_salary_rule_82_5c61b487","hr_payroll.ALW","ALW","Python Expression","if inputs.PFA:
+   if inputs.PFA.amount > 0:
+       result = 1
+   else:
+       result = 0
+else:
+   result = 0","","P042","result = PG042 + PE042","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Pago fondo ahorro","","__export__.hr_salary_rule_302_2fbfb1a4","__export__.hr_salary_rule_303_2e625dda","True","False","0.0","","302","Todo el monto","","Python Code","catalogo.percepciones05"
+"__export__.hr_salary_rule_416_dc06d7a3","hr_payroll.ALW","ALW","Python Expression","if worked_days.HEX3:
+   result = 1
+else:
+   result = 0","","HEX3","result =  contract.sueldo_diario/8 * worked_days.HEX3.number_of_hours * 3
+","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Horas extras triples","","","__export__.hr_salary_rule_298_a1ef148b","True","False","0.0","","302","Todo el monto","","Python Code","catalogo.percepciones14"
+"__export__.hr_salary_rule_295_5891d6c3","hr_payroll.ALW","ALW","Python Expression","if inputs.P043:
+   result = 1
+else:
+   result = 0","","P043","result = PE043 + PG043","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Tiempo extra","","__export__.hr_salary_rule_293_0b3af3bd","__export__.hr_salary_rule_294_db483224","True","False","0.0","","307","Todo el monto","","Python Code","catalogo.percepciones01"
+"__export__.hr_salary_rule_66_cff35775","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","DA01","dias_laborados = 0
+
+if worked_days.WORK100:
+   dias_laborados = worked_days.WORK100.number_of_days
+if worked_days.FJC:
+   dias_laborados = dias_laborados + worked_days.FJC.number_of_days
+if contract.periodicidad_pago == '02':
+   dias_laborados = dias_laborados + dias_laborados*1/6
+
+#cuota del IMSS parte del Empleado
+salario_cotizado = contract.sueldo_base_cotizacion * dias_laborados
+uma3 =  contract.tablas_cfdi_id.uma * 3
+# falta especie excedente
+
+prestaciones = salario_cotizado * contract.tablas_cfdi_id.enf_mat_prestaciones_e/100
+invalli_y_vida = salario_cotizado * contract.tablas_cfdi_id.inv_vida_e/100
+cesantia_y_vejez = salario_cotizado * contract.tablas_cfdi_id.cesantia_vejez_e/100
+pensio_y_benefi = salario_cotizado * contract.tablas_cfdi_id.enf_mat_gastos_med_e/100
+
+#seguro_enfermedad_maternidad
+excedente = contract.sueldo_base_cotizacion - uma3
+base_cotizacion = excedente * contract.tablas_cfdi_id.enf_mat_excedente_e/100
+seg_enf_mat = base_cotizacion * dias_laborados
+
+mens = prestaciones + pensio_y_benefi + invalli_y_vida + cesantia_y_vejez + seg_enf_mat
+result = invalli_y_vida","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Ret. Inv. y vida","","","","False","False","0.0","","310","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_67_ceb0dfbe","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","DA02","dias_laborados = 0
+
+if worked_days.WORK100:
+   dias_laborados = worked_days.WORK100.number_of_days
+if worked_days.FJC:
+   dias_laborados = dias_laborados + worked_days.FJC.number_of_days
+if contract.periodicidad_pago == '02':
+   dias_laborados = dias_laborados + dias_laborados*1/6
+
+#cuota del IMSS parte del Empleado
+salario_cotizado = contract.sueldo_base_cotizacion * dias_laborados
+uma3 =  contract.tablas_cfdi_id.uma * 3
+# falta especie excedente
+
+prestaciones = salario_cotizado * contract.tablas_cfdi_id.enf_mat_prestaciones_e/100
+invalli_y_vida = salario_cotizado * contract.tablas_cfdi_id.inv_vida_e/100
+cesantia_y_vejez = salario_cotizado * contract.tablas_cfdi_id.cesantia_vejez_e/100
+pensio_y_benefi = salario_cotizado * contract.tablas_cfdi_id.enf_mat_gastos_med_e/100
+
+#seguro_enfermedad_maternidad
+excedente = contract.sueldo_base_cotizacion - uma3
+base_cotizacion = excedente * payslip.imss_mes
+seg_enf_mat = base_cotizacion * contract.tablas_cfdi_id.enf_mat_excedente_e/100
+
+mens = prestaciones + pensio_y_benefi + invalli_y_vida + cesantia_y_vejez + seg_enf_mat
+result = cesantia_y_vejez","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Ret. Cesantia","","","","False","False","0.0","","311","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_68_914f82ef","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","DA03","dias_laborados = 0
+
+if worked_days.WORK100:
+   dias_laborados = worked_days.WORK100.number_of_days
+if worked_days.FJC:
+   dias_laborados = dias_laborados + worked_days.FJC.number_of_days
+if contract.periodicidad_pago == '02':
+   dias_laborados = dias_laborados + dias_laborados*1/6
+
+#cuota del IMSS parte del Empleado
+salario_cotizado = contract.sueldo_base_cotizacion * dias_laborados
+uma3 =  contract.tablas_cfdi_id.uma * 3
+# falta especie excedente
+
+prestaciones = salario_cotizado * contract.tablas_cfdi_id.enf_mat_prestaciones_e/100
+invalli_y_vida = salario_cotizado * contract.tablas_cfdi_id.inv_vida_e/100
+cesantia_y_vejez = salario_cotizado * contract.tablas_cfdi_id.cesantia_vejez_e/100
+pensio_y_benefi = salario_cotizado * contract.tablas_cfdi_id.enf_mat_gastos_med_e/100
+
+#seguro_enfermedad_maternidad
+excedente = contract.sueldo_base_cotizacion - uma3
+base_cotizacion = excedente * payslip.imss_mes
+seg_enf_mat = base_cotizacion * contract.tablas_cfdi_id.enf_mat_excedente_e/100
+
+if contract.sueldo_diario_integrado < uma3:
+  result = prestaciones + pensio_y_benefi
+else:
+  result = prestaciones + pensio_y_benefi + abs(seg_enf_mat)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Ret. Enf y Mat. obrero","","","","False","False","0.0","","312","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_184_7f7908a8","hr_payroll.DED","DED","Python Expression","if inputs.DVIAT:
+   if inputs.DVIAT.amount > 0:
+      result = 1 > 0
+   else:
+      result = 0 > 1","","D003","if inputs.DVIAT:
+   result = inputs.DVIAT.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Ajuste en viáticos entregados al trabajador","","","","False","False","0.0","","340","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_75_eae34899","hr_payroll.DED","DED","Python Expression","result = 0","","D064","result =  contract.prest_financ","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Prestamo empresa","","","","False","False","0.0","","364","Todo el monto","catalogos.deduccion12","Python Code",""
+"__export__.hr_salary_rule_137_80af394c","hr_payroll.DED","DED","Python Expression","if inputs.D013:
+   if inputs.D013.amount > 0:
+      result = 1 > 0
+   else:
+      result = 0 > 1","","D065","result = inputs.D013.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Interés prestamo empresa","","","","False","False","0.0","","365","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_70_01190fa9","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","D066","result = contract.anticipo_sueldo","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Anticipo sueldo","","","","False","False","0.0","","366","Todo el monto","catalogos.deduccion12","Python Code",""
+"__export__.hr_salary_rule_81_bbaef598","hr_payroll.DED","DED","Python Expression","if worked_days.WORK100 and contract.fondo_ahorro:
+   result = 1
+else:
+   result = 0","","D067","result = P001 * .075","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Fondo de ahorro","","","","False","False","0.0","","367","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_135_e8669594","hr_payroll.DED","DED","Python Expression","if worked_days.WORK100 and contract.fondo_ahorro:
+   result = 1
+else:
+   result = 0","","D068","result = P001 * .075","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Fondo de ahorro empresa","","","","False","False","0.0","","368","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_71_a2cc23ce","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","D070","result = contract.deduc_gral","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Deducción general","","","","False","False","0.0","","370","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_136_a55f5e51","hr_payroll.DED","DED","Python Expression","if inputs.D009:
+   if inputs.D009.amount > 0:
+      result = 1 > 0
+   else:
+      result = 0 > 1","","D072","result = inputs.D009.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Prestamo fondo de ahorro","","","","False","False","0.0","","372","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_147_06d1d785","hr_payroll.DED","DED","Python Expression","if inputs.D009:
+   if inputs.D009.amount > 0:
+      result = 1 > 0
+   else:
+      result = 0 > 1","","D073","result = inputs.D009.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Interés prestamo fondo de ahorro","","","","False","False","0.0","","373","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_27","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","D080","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days.
+                    # inputs: object containing the computed inputs.
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = contract.wage * 0.10","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Devolución de viáticos","","","","False","False","0.0","","380","Todo el monto","catalogos.deduccion81","Fixed Amount",""
+"__export__.hr_salary_rule_30","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","D088","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days.
+                    # inputs: object containing the computed inputs.
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = contract.wage * 0.10","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Aportación voluntaria SAR","","","","False","False","0.0","","388","Todo el monto","catalogos.deduccion23","Fixed Amount",""
+"__export__.hr_salary_rule_171_fb81c220","hr_payroll.DED","DED","Python Expression","if inputs.AGNC:
+   result =  1>0
+else:
+   result = 0>1","","D089","if inputs.AGNC:
+   result = inputs.AGNC.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Anticipo de gastos no comprobados","","","","False","False","0.0","","389","Todo el monto","","Python Code",""
+"nomina_cfdi_extras.dev_emp_loan_installment","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","390","result = (payslip.installment_amount or 0)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Préstamo","","","","False","False","0.0","","390","Todo el monto","","Python Code",""
+"nomina_cfdi_extras.dev_emp_loan_interest_installment","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","391","result = (payslip.installment_int or 0)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Interés del préstamo","","","","False","False","0.0","","391","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_38","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","TPERE","result = categories.ALW2","","False","","0.0","","","False","False","contract.wage","0.0","Total Percepcion exento","","","","False","False","0.0","","397","","","Python Code",""
+"__export__.hr_salary_rule_37","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","TPERG","result = categories.ALW - categories.ALW2","","False","","0.0","","","False","False","contract.wage","0.0","Total Percepciones Gravadas","","","","False","False","0.0","","398","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_34","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","TPER","result = TPERG + TPERE","","False","","0.0","","","False","False","contract.wage","0.0","Total Percepciones","","","","False","False","0.0","","399","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_14","__export__.hr_salary_rule_category_7","ALW3","Python Expression","work = 0
+
+if TPERG > 0:
+   work = 1
+if rules.O005:
+   work = 0
+if rules.O006:
+   work = 0
+
+result = work","","O001","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+grabado_mensual = 0
+
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+if line2:
+   dias_periodo = line2.no_dias
+else:
+   dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+if payslip.ultima_nomina and payslip.isr_ajustar:
+   grabado_mensual = TPERG + payslip.acum_per_grav
+   grabado_sub = TPERG + payslip.acum_per_grav
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+else:
+   grabado_mensual = TPERG
+   grabado_sub = TPERG / payslip.dias_pagar * contract.tablas_cfdi_id.imss_mes
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.isr.periodo'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+if line:
+   limite_inferior = line.lim_inf
+   cuota_fija = line.c_fija
+   porcentaje_sobre_excedente = line.s_excedente
+line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_sub)],order='lim_inf desc',limit=1)
+if line3:
+   subsidio_empleo = line3.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+subem_entregar = 0
+factor01 = 0
+dev_isr = 0
+#subsidio mensual
+if payslip.ultima_nomina and payslip.isr_ajustar:
+   if subsidio_empleo > isr_tarifa_113:
+      if subsidio_empleo - isr_tarifa_113  < payslip.acum_isr or (subsidio_empleo > isr_tarifa_113 and payslip.acum_isr > 0):
+          dev_isr = payslip.acum_isr
+      subem_entregar = subsidio_empleo - isr_tarifa_113
+      if not (payslip.acum_subsidio_aplicado <= 0 and subsidio_empleo > 0):
+          factor01 = payslip.acum_isr_antes_subem + subem_entregar - payslip.acum_subsidio_aplicado - dev_isr
+          if factor01 > 0:
+              subem_entregar = factor01
+          else:
+               subem_entregar = 0            
+else:
+   subsidio_entregado = isr_tarifa_113 - (subsidio_empleo / contract.tablas_cfdi_id.imss_mes) * payslip.dias_pagar
+   total = isr_tarifa_113 
+   total2 = subsidio_entregado
+
+if payslip.ultima_nomina and payslip.isr_ajustar:
+   if subem_entregar > 0:
+      result = round(subem_entregar,2)
+   else:
+      result = 0
+else:
+   if subsidio_empleo > 0:
+      if subsidio_entregado < 0:
+         result = round(abs(total2),2)
+      else:
+         result = 0
+   else:
+      result = 0
+
+if inputs.O001:
+   result = inputs.O001.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Subsidio para el empleo (sp)","catalogo.otropago02","","","False","False","0.0","","435","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_154_945257be","__export__.hr_salary_rule_category_7","ALW3","Always True","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0   
+grabado_mensual = 0
+
+grabado_mensual = TPERG
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+
+if subsidio_empleo <= 0:
+    result = 0
+else:
+   result =  1","","O001","result = 0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Subsidio para el empleo (sp) PTU","","","","False","False","0.0","","400","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_312_0d4666db","__export__.hr_salary_rule_category_7","ALW3","Always True","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+dias_periodo_mes = 0
+dias_periodo = 0
+
+if contract.periodicidad_pago == '02' and payslip.isr_ajustar:
+   dias_periodo_mes = payslip.dias_periodo
+   dias_periodo = 7 * float(payslip.no_nomina)
+else:
+   dias_periodo_mes = contract.tablas_cfdi_id.imss_mes
+   dias_periodo = payslip.dias_pagar
+
+#grabado_mensual
+if float(payslip.no_nomina) > 1 and payslip.isr_ajustar:
+        grabado_mensual = (TPERG + payslip.acum_per_grav) / dias_periodo * dias_periodo_mes
+else:
+        grabado_mensual = TPERG  / dias_periodo * dias_periodo_mes
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+	   
+if subsidio_empleo <= 0:
+    result = 0
+else:
+   result =  1","","O001","result = 0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Subsidio para el empleo (sp)","catalogo.otropago02","","","False","False","0.0","","400","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_161_dd02c746","__export__.hr_salary_rule_category_7","ALW3","Python Expression","if inputs.VIAT:
+   if inputs.VIAT.amount > 0:
+      result = 1 > 0
+   else:
+      result = 0 > 1","","O003","if inputs.VIAT:
+   result = inputs.VIAT.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Viaticos","","","","False","False","0.0","","405","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_309_b2a9c05e","__export__.hr_salary_rule_category_7","ALW3","Python Expression","if inputs.ISR19:
+   if inputs.ISR19.amount > 0:
+      result = 1
+   else:
+      result = 0","","O004","if inputs.ISR19:
+   result = inputs.ISR19.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Reintegro de ISR retenido en exceso de ejercicio anterior","catalogo.otropago04","","","False","False","0.0","","410","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_1080_bb00413c","__export__.hr_salary_rule_category_7","ALW3","Python Expression","limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+work =  0
+
+if TPERG > 0:
+      work = 1
+
+if payslip.ultima_nomina and payslip.isr_ajustar and work > 0:
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+   line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+   if line2:
+      dias_periodo = line2.no_dias
+   else:
+      dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+   grabado_mensual = TPERG + payslip.acum_per_grav
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+      line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+   if line:
+      limite_inferior = line.lim_inf
+      cuota_fija = line.c_fija
+      porcentaje_sobre_excedente = line.s_excedente
+
+   if line3:
+      subsidio_empleo = line3.s_mensual
+
+   #articulo 113
+   excedente_limite_superior = grabado_mensual - limite_inferior
+   impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+   isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+   op_isr_ajuste = 0
+   op_ajuste_subem_causado = 0
+   op_ajuste_subem = 0
+   desc_dev_isr = 0
+   desc_isr_ret_subem_entregado = 0
+   desc_dev_subem = 0
+   subem_entregar =  0
+   factor01 = 0
+   isr_retener = 0
+
+   if isr_tarifa_113 > subsidio_empleo:
+      isr_retener = isr_tarifa_113 - subsidio_empleo
+      isr_retener = isr_retener - payslip.acum_isr
+      if payslip.acum_subsidio_aplicado > 0 and subsidio_empleo == 0:
+          if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+             desc_isr_ret_subem_entregado = payslip.acum_isr_antes_subem
+             desc_dev_subem = payslip.acum_subsidio_aplicado - payslip.acum_isr_antes_subem
+          else:
+             desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado
+          if subsidio_empleo == 0:
+             if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+                op_isr_ajuste = payslip.acum_isr_antes_subem
+             else:
+                op_isr_ajuste = payslip.acum_subsidio_aplicado
+             if payslip.acum_subsidio_aplicado > 0:
+                op_ajuste_subem_causado =  payslip.acum_subsidio_aplicado
+      elif payslip.acum_subsidio_aplicado > 0 and subsidio_empleo > 0:
+             if payslip.acum_subsidio_aplicado > subsidio_empleo:
+                desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado - subsidio_empleo
+                op_isr_ajuste = payslip.acum_subsidio_aplicado - subsidio_empleo
+                op_ajuste_subem_causado = payslip.acum_subsidio_aplicado - subsidio_empleo
+             else:
+                result = 0
+      else:
+         result = 0
+   else:
+      subem_entregar = subsidio_empleo - isr_tarifa_113
+      if payslip.acum_isr_antes_subem > payslip.acum_subsidio_aplicado:
+         factor01 = payslip.acum_isr_antes_subem
+      else:
+         factor01 = payslip.acum_subsidio_aplicado
+      subem_entregar = factor01 - payslip.acum_isr_antes_subem - subem_entregar
+
+   if desc_isr_ret_subem_entregado > 0 and not payslip.isr_anual:
+     result = 1
+   else:
+     result = 0
+else:
+   result = 0","","O005","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+if line2:
+   dias_periodo = line2.no_dias
+else:
+   dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+grabado_mensual = TPERG + payslip.acum_per_grav
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+if line:
+    limite_inferior = line.lim_inf
+    cuota_fija = line.c_fija
+    porcentaje_sobre_excedente = line.s_excedente
+
+if line3:
+    subsidio_empleo = line3.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+op_isr_ajuste = 0
+op_ajuste_subem_causado = 0
+op_ajuste_subem = 0
+desc_dev_isr = 0
+desc_isr_ret_subem_entregado = 0
+desc_dev_subem = 0
+subem_entregar =  0
+factor01 = 0
+isr_retener = 0
+
+if isr_tarifa_113 > subsidio_empleo:
+   isr_retener = isr_tarifa_113 - subsidio_empleo
+   isr_retener = isr_retener - payslip.acum_isr
+   if payslip.acum_subsidio_aplicado > 0 and subsidio_empleo == 0:
+       if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+          desc_isr_ret_subem_entregado = payslip.acum_isr_antes_subem
+          desc_dev_subem = payslip.acum_subsidio_aplicado - payslip.acum_isr_antes_subem
+       else:
+          desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado
+       if subsidio_empleo == 0:
+          if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+             op_isr_ajuste = payslip.acum_isr_antes_subem
+          else:
+             op_isr_ajuste = payslip.acum_subsidio_aplicado
+          if payslip.acum_subsidio_aplicado > 0:
+             op_ajuste_subem_causado =  payslip.acum_subsidio_aplicado
+   elif payslip.acum_subsidio_aplicado > 0 and subsidio_empleo > 0:
+          if payslip.acum_subsidio_aplicado > subsidio_empleo:
+             desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado - subsidio_empleo
+             op_isr_ajuste = payslip.acum_subsidio_aplicado - subsidio_empleo
+             op_ajuste_subem_causado = payslip.acum_subsidio_aplicado - subsidio_empleo
+          else:
+             result = 0
+   else:
+      result = 0
+else:
+   subem_entregar = subsidio_empleo - isr_tarifa_113
+   if payslip.acum_isr_antes_subem > payslip.acum_subsidio_aplicado:
+      factor01 = payslip.acum_isr_antes_subem
+   else:
+      factor01 = payslip.acum_subsidio_aplicado
+   subem_entregar = factor01 - payslip.acum_isr_antes_subem - subem_entregar
+
+result = round(desc_isr_ret_subem_entregado, 2)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR a retener por subsidio entregado que no correspondia","catalogo.otropago07","","","False","False","0.0","","415","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_424_58b41c82","__export__.hr_salary_rule_category_7","ALW3","Python Expression","limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+work =  0
+
+if TPERG > 0:
+      work = 1
+
+if not payslip.nom_liquidacion and payslip.ultima_nomina and payslip.isr_ajustar and work > 0:
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+   line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+   if line2:
+      dias_periodo = line2.no_dias
+   else:
+      dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+   grabado_mensual = TPERG + payslip.acum_per_grav
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+      line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+   if line:
+      limite_inferior = line.lim_inf
+      cuota_fija = line.c_fija
+      porcentaje_sobre_excedente = line.s_excedente
+
+   if line3:
+      subsidio_empleo = line3.s_mensual
+
+   #articulo 113
+   excedente_limite_superior = grabado_mensual - limite_inferior
+   impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+   isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+   op_isr_ajuste = 0
+   op_ajuste_subem_causado = 0
+   op_ajuste_subem = 0
+   desc_dev_isr = 0
+   desc_isr_ret_subem_entregado = 0
+   desc_dev_subem = 0
+   subem_entregar =  0
+   factor01 = 0
+   isr_retener = 0
+
+   if isr_tarifa_113 > subsidio_empleo:
+      isr_retener = isr_tarifa_113 - subsidio_empleo
+      isr_retener = isr_retener - payslip.acum_isr
+      if payslip.acum_subsidio_aplicado > 0 and subsidio_empleo == 0:
+          if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+             desc_isr_ret_subem_entregado = payslip.acum_isr_antes_subem
+             desc_dev_subem = payslip.acum_subsidio_aplicado - payslip.acum_isr_antes_subem
+          else:
+             desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado
+          if subsidio_empleo == 0:
+             if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+                op_isr_ajuste = payslip.acum_isr_antes_subem
+             else:
+                op_isr_ajuste = payslip.acum_subsidio_aplicado
+             if payslip.acum_subsidio_aplicado > 0:
+                op_ajuste_subem_causado =  payslip.acum_subsidio_aplicado
+      else:
+         result = 0
+   else:
+      subem_entregar = subsidio_empleo - isr_tarifa_113
+      if payslip.acum_isr_antes_subem > payslip.acum_subsidio_aplicado:
+         factor01 = payslip.acum_isr_antes_subem
+      else:
+         factor01 = payslip.acum_subsidio_aplicado
+      subem_entregar = factor01 - payslip.acum_isr_antes_subem - subem_entregar
+
+   if desc_dev_subem > 0 and not payslip.isr_anual:
+     result = 1
+   else:
+     result = 0
+else:
+   result = 0","","O006","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+if line2:
+   dias_periodo = line2.no_dias
+else:
+   dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+grabado_mensual = TPERG + payslip.acum_per_grav
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+if line:
+    limite_inferior = line.lim_inf
+    cuota_fija = line.c_fija
+    porcentaje_sobre_excedente = line.s_excedente
+
+if line3:
+    subsidio_empleo = line3.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+op_isr_ajuste = 0
+op_ajuste_subem_causado = 0
+op_ajuste_subem = 0
+desc_dev_isr = 0
+desc_isr_ret_subem_entregado = 0
+desc_dev_subem = 0
+subem_entregar =  0
+factor01 = 0
+isr_retener = 0
+
+if isr_tarifa_113 > subsidio_empleo:
+   isr_retener = isr_tarifa_113 - subsidio_empleo
+   isr_retener = isr_retener - payslip.acum_isr
+   if payslip.acum_subsidio_aplicado > 0 and subsidio_empleo == 0:
+       if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+          desc_isr_ret_subem_entregado = payslip.acum_isr_antes_subem
+          desc_dev_subem = payslip.acum_subsidio_aplicado - payslip.acum_isr_antes_subem
+       else:
+          desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado
+       if subsidio_empleo == 0:
+          if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+             op_isr_ajuste = payslip.acum_isr_antes_subem
+          else:
+             op_isr_ajuste = payslip.acum_subsidio_aplicado
+          if payslip.acum_subsidio_aplicado > 0:
+             op_ajuste_subem_causado =  payslip.acum_subsidio_aplicado
+   else:
+      result = 0
+else:
+   subem_entregar = subsidio_empleo - isr_tarifa_113
+   if payslip.acum_isr_antes_subem > payslip.acum_subsidio_aplicado:
+      factor01 = payslip.acum_isr_antes_subem
+   else:
+      factor01 = payslip.acum_subsidio_aplicado
+   subem_entregar = factor01 - payslip.acum_isr_antes_subem - subem_entregar
+
+result = round(desc_dev_subem,2)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Devolución de SUBEM efectivamente entregado","catalogo.otropago09","","","False","False","0.0","","420","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_35","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","TOP","result = categories.ALW3","","False","","0.0","","","False","False","contract.wage","0.0","Total otros pagos","","","","False","False","0.0","","499","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_21","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Python Expression","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+grabado_mensual = 0
+
+work = 0
+if TPER > 0:
+      work = 1
+
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+if line2:
+   dias_periodo = line2.no_dias
+else:
+   dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+if payslip.ultima_nomina and payslip.isr_ajustar:
+   grabado_mensual = TPERG + payslip.acum_per_grav
+   grabado_sub = TPERG + payslip.acum_per_grav
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+else:
+   grabado_mensual = TPERG
+   grabado_sub = TPERG / payslip.dias_pagar * contract.tablas_cfdi_id.imss_mes
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.isr.periodo'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+if line:
+   limite_inferior = line.lim_inf
+   cuota_fija = line.c_fija
+   porcentaje_sobre_excedente = line.s_excedente
+line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_sub)],order='lim_inf desc',limit=1)
+if line3:
+   subsidio_empleo = line3.s_mensual
+
+if subsidio_empleo <= 0:
+    result = 0
+else:
+   if work:
+      result =  1
+   else:
+      result = 0
+
+if inputs.SUB:
+   result = 1","","SUB","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+grabado_mensual = 0
+
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+if line2:
+   dias_periodo = line2.no_dias
+else:
+   dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+if payslip.ultima_nomina and payslip.isr_ajustar:
+   grabado_mensual = TPERG + payslip.acum_per_grav
+   grabado_sub = TPERG + payslip.acum_per_grav
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+else:
+   grabado_mensual = TPERG
+   grabado_sub = TPERG / payslip.dias_pagar * contract.tablas_cfdi_id.imss_mes
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.isr.periodo'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+if line:
+   limite_inferior = line.lim_inf
+   cuota_fija = line.c_fija
+   porcentaje_sobre_excedente = line.s_excedente
+line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_sub)],order='lim_inf desc',limit=1)
+if line3:
+   subsidio_empleo = line3.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+#subsidio mensual
+if payslip.ultima_nomina and payslip.isr_ajustar:
+   if subsidio_empleo > 0:
+      subsidio_pagado = isr_tarifa_113 - abs(payslip.acum_isr_antes_subem) - subsidio_empleo
+      total =  isr_tarifa_113 - abs(payslip.acum_isr_antes_subem)
+   else:
+      subsidio_pagado = isr_tarifa_113 - abs(payslip.acum_isr) - subsidio_empleo
+      total = isr_tarifa_113 - abs(payslip.acum_isr)
+   total2 = subsidio_pagado - payslip.acum_subsidio_aplicado
+else:
+   subsidio_pagado = isr_tarifa_113 - (subsidio_empleo / contract.tablas_cfdi_id.imss_mes) * payslip.dias_pagar
+   total = isr_tarifa_113 
+   total2 = subsidio_pagado
+
+if payslip.ultima_nomina and payslip.isr_ajustar:
+   if payslip.acum_subsidio_aplicado > subsidio_empleo:
+      result = 0
+   else:
+      result = round(subsidio_empleo - payslip.acum_subsidio_aplicado,2)
+else:
+   result = round((subsidio_empleo / contract.tablas_cfdi_id.imss_mes) * payslip.dias_pagar,2)
+
+if inputs.SUB:
+   result = inputs.SUB.amount","","False","Efectivo","10.0","","","False","False","contract.wage","0.0","Subsidio al Empleo aplicado","","","","False","False","0.0","","500","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_197_776befe2","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Python Expression","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+grabado_mensual = 0
+
+grabado_mensual = TPERG
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+
+if subsidio_empleo <= 0:
+    result = 0
+else:
+   result =  1","","SUB","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+	   
+grabado_mensual = TPERG
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+#subsidio mensual
+subsidio_pagado = isr_tarifa_113 - subsidio_empleo
+total = isr_tarifa_113
+total2 =  subsidio_pagado
+if subsidio_pagado < 0:
+    result = abs(total) + abs(total2)
+else:
+   result =  subsidio_empleo","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Subsidio al Empleo aplicado PTU","","","","False","False","0.0","","500","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_78_6de34d75","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Python Expression","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+grabado_mensual = 0
+
+work = 0
+if TPER > 0:
+      work = 1
+
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+if line2:
+   dias_periodo = line2.no_dias
+else:
+   dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+if payslip.ultima_nomina and payslip.isr_ajustar:
+   grabado_mensual = TPERG + payslip.acum_per_grav
+   grabado_sub = TPERG + payslip.acum_per_grav
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+else:
+   grabado_mensual = TPERG
+   grabado_sub = TPERG / payslip.dias_pagar * contract.tablas_cfdi_id.imss_mes
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.isr.periodo'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+if line:
+   limite_inferior = line.lim_inf
+   cuota_fija = line.c_fija
+   porcentaje_sobre_excedente = line.s_excedente
+line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_sub)],order='lim_inf desc',limit=1)
+if line3:
+   subsidio_empleo = line3.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+#subsidio mensual
+subsidio_pagado = isr_tarifa_113 - (subsidio_empleo / contract.tablas_cfdi_id.imss_mes) * payslip.dias_pagar
+total = isr_tarifa_113 
+total2 = subsidio_pagado
+
+if subsidio_empleo <= 0:
+   result = 0
+else:
+   if work:
+      result =  1
+   else:
+      result = 0
+
+if inputs.ISR:
+   result = 1","","ISR","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+grabado_mensual = 0
+
+#########################################################
+##################  #dias trabajados   ####################### 
+#########################################################
+dias_trabajados = 0
+if worked_days.WORK100:
+   dias_trabajados = worked_days.WORK100.number_of_days
+if worked_days.SEPT:
+   dias_trabajados = dias_trabajados + worked_days.SEPT.number_of_days
+if worked_days.VAC:
+   dias_trabajados = dias_trabajados + worked_days.VAC.number_of_days
+if worked_days.FJC:
+   dias_trabajados = dias_trabajados + worked_days.FJC.number_of_days
+
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+if line2:
+   dias_periodo = line2.no_dias
+else:
+   dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+if payslip.ultima_nomina and payslip.isr_ajustar:
+   grabado_mensual = TPERG + payslip.acum_per_grav
+   grabado_sub = TPERG + payslip.acum_per_grav
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+else:
+   grabado_mensual = TPERG
+   grabado_sub = TPERG / dias_trabajados * contract.tablas_cfdi_id.imss_mes
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.isr.periodo'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+if line:
+   limite_inferior = line.lim_inf
+   cuota_fija = line.c_fija
+   porcentaje_sobre_excedente = line.s_excedente
+line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_sub)],order='lim_inf desc',limit=1)
+if line3:
+   subsidio_empleo = line3.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+#subsidio mensual
+if payslip.ultima_nomina and payslip.isr_ajustar:
+   subsidio_pagado = isr_tarifa_113 - subsidio_empleo
+   if subsidio_empleo > 0:
+      total = isr_tarifa_113 - abs(payslip.acum_isr_antes_subem)
+   else:
+      total = isr_tarifa_113 - abs(payslip.acum_isr)
+   total2 =  subsidio_pagado
+else:
+   subsidio_pagado = isr_tarifa_113 - (subsidio_empleo / contract.tablas_cfdi_id.imss_mes) * dias_trabajados
+   total = isr_tarifa_113 
+   total2 = subsidio_pagado
+
+if total < 0:
+   result = 0
+else:
+   result = round(total,2)
+
+if inputs.ISR:
+   result = inputs.ISR.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR antes de SUBEM","","","","False","False","0.0","","502","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_196_66122ce7","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Python Expression","	#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+	   
+grabado_mensual = TPERG
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+#subsidio mensual
+subsidio_pagado = isr_tarifa_113 - subsidio_empleo
+total = (isr_tarifa_113 / contract.tablas_cfdi_id.imss_mes) * dias_laborados
+total2 =  (subsidio_pagado / contract.tablas_cfdi_id.imss_mes) * dias_laborados
+
+if subsidio_empleo <= 0:
+    result = 0>1
+else:
+   result =  1>0","","ISR","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+
+grabado_mensual = TPERG
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+#subsidio mensual
+subsidio_pagado = isr_tarifa_113 - subsidio_empleo
+total = (isr_tarifa_113 ) 
+total2 =  (subsidio_pagado )
+
+result = total","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR antes de SUBEM PTU","","","","False","False","0.0","","502","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_92_1ac09505","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","ISR","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+
+ingreso_normal_mensual = contract.sueldo_diario*15
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',ingreso_normal_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       inm_lim_inf = line.lim_inf
+       inm_c_fija= line.c_fija
+       inm_p_s_exedente = line.s_excedente
+
+aguinaldo_normal_mensual = contract.sueldo_diario*30 + categories.ALW
+if contract.tablas_cfdi_id:
+    line2 = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',aguinaldo_normal_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       anm_lim_inf = line2.lim_inf
+       anm_c_fija= line2.c_fija
+       anm_p_s_exedente = line2.s_excedente
+	   
+#articulo 113
+excedente_limite_superior = ingreso_normal_mensual - inm_lim_inf
+impuesto_marginal = excedente_limite_superior * inm_p_s_exedente/100
+isr_tarifa_113 = impuesto_marginal + inm_c_fija
+
+#articulo 113
+ex_limite_superior = aguinaldo_normal_mensual - anm_lim_inf
+imp_marginal = ex_limite_superior * anm_p_s_exedente/100
+isr_tarifa_213 = imp_marginal + anm_c_fija
+
+result = isr_tarifa_213-isr_tarifa_113","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR repartición utilidades","","","","False","False","0.0","","503","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_127_4c5d7e10","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","ISR","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+
+ingreso_normal_mensual =  contract.sueldo_diario*payslip.imss_mes + categories.ALW/worked_days.WORK100.number_of_days * payslip.imss_mes
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',ingreso_normal_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       inm_lim_inf = line.lim_inf
+       inm_c_fija= line.c_fija
+       inm_p_s_exedente = line.s_excedente
+	   
+#articulo 113
+excedente_limite_superior = ingreso_normal_mensual - inm_lim_inf
+impuesto_marginal = excedente_limite_superior * inm_p_s_exedente/100
+isr_tarifa_113 = impuesto_marginal + inm_c_fija
+
+result = (isr_tarifa_113 / payslip.imss_mes) * worked_days.WORK100.number_of_days","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR asimilados","","","","False","False","0.0","","504","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_129_a57ca547","hr_payroll.DED","DED","Python Expression","if payslip.nom_liquidacion:
+   result = 1
+else:
+   result = 0","","ISR3","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+monto_percepciones = TPERG
+
+if rules.P021:
+   monto_percepciones = monto_percepciones - P021
+if rules.P033:
+   monto_percepciones = monto_percepciones - P033
+
+grabado_mensual = monto_percepciones + contract.sueldo_diario * contract.tablas_cfdi_id.imss_mes
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+grabado_mensual2 = contract.sueldo_diario * contract.tablas_cfdi_id.imss_mes
+
+if contract.tablas_cfdi_id:
+    line3 = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line3:
+       limite_inferior2 = line3.lim_inf
+       cuota_fija2 = line3.c_fija
+       porcentaje_sobre_excedente2 = line3.s_excedente
+    line4 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line4:
+       subsidio_empleo2 = line4.s_mensual
+	   
+#articulo 113
+excedente_limite_superior2 = grabado_mensual2 - limite_inferior2
+impuesto_marginal2 = excedente_limite_superior2 * porcentaje_sobre_excedente2/100
+isr_tarifa_113_2 = impuesto_marginal2 + cuota_fija2
+
+
+isr_mensual = isr_tarifa_113 - isr_tarifa_113_2
+
+if contract.periodicidad_pago == '02':
+   isr_mensual = isr_mensual / 4
+if contract.periodicidad_pago == '04':
+   isr_mensual = isr_mensual / 2
+
+result = isr_mensual","ISR para nomina de liquidación","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR Art. 96 LISR","","","","False","False","0.0","","504","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_130_726c5cb3","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","ISR2","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+monto_percepciones = 0
+
+if rules.PG004:
+   monto_percepciones = monto_percepciones + PG004
+if rules.P033:
+   monto_percepciones = monto_percepciones + P033
+
+fraccion1 = monto_percepciones / 365 * contract.tablas_cfdi_id.imss_mes
+
+grabado_mensual = fraccion1 + contract.sueldo_diario * contract.tablas_cfdi_id.imss_mes
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+fraccion2 = impuesto_marginal + cuota_fija
+
+grabado_mensual2 = contract.sueldo_diario * contract.tablas_cfdi_id.imss_mes
+
+if contract.tablas_cfdi_id:
+    line3 = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line3:
+       limite_inferior2 = line3.lim_inf
+       cuota_fija2 = line3.c_fija
+       porcentaje_sobre_excedente2 = line3.s_excedente
+    line4 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line4:
+       subsidio_empleo2 = line4.s_mensual
+	   
+#articulo 113
+excedente_limite_superior2 = grabado_mensual2 - limite_inferior2
+impuesto_marginal2 = excedente_limite_superior2 * porcentaje_sobre_excedente2/100
+isr_tarifa_113_2 = impuesto_marginal2 + cuota_fija2
+
+fraccion3 = fraccion2 - isr_tarifa_113_2
+
+if fraccion1 > 0:
+   fraccion5 = fraccion3 / fraccion1
+   result = fraccion5 * monto_percepciones
+else:
+   result = 0","ISR para nomina de aguinaldos","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR aguinaldo","","","","False","False","0.0","","504","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_220_f4cb664e","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","ISR2","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+
+grabado_mensual = contract.sueldo_diario * 30
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+tasa_isr = isr_tarifa_113 / grabado_mensual
+
+result = TPERG * tasa_isr","ISR para nomina de liquidación","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR Art. 95 LISR","","","","False","False","0.0","","504","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_85_c6da0ae1","hr_payroll.DED","DED","Python Expression","#if payslip.nom_liquidacion:
+#   result = 0
+#else:
+result = 1","","ISR2","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+grabado_mensual = 0
+
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+if line2:
+   dias_periodo = line2.no_dias
+else:
+   dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+if payslip.ultima_nomina and payslip.isr_ajustar:
+   grabado_mensual = TPERG + payslip.acum_per_grav
+   grabado_sub = TPERG + payslip.acum_per_grav
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+else:
+   grabado_mensual = TPERG
+   grabado_sub = TPERG / payslip.dias_pagar * contract.tablas_cfdi_id.imss_mes
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.isr.periodo'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+if line:
+   limite_inferior = line.lim_inf
+   cuota_fija = line.c_fija
+   porcentaje_sobre_excedente = line.s_excedente
+line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_sub)],order='lim_inf desc',limit=1)
+if line3:
+   subsidio_empleo = line3.s_mensual
+
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+op_isr_ajuste = 0
+isr_retener = 0
+
+#subsidio mensual
+if payslip.ultima_nomina and payslip.isr_ajustar:
+   isr_retener = isr_tarifa_113 - subsidio_empleo
+   isr_retener = isr_retener - payslip.acum_isr
+   if payslip.acum_subsidio_aplicado > 0 and subsidio_empleo == 0:
+       if subsidio_empleo == 0:
+          if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+             op_isr_ajuste = payslip.acum_isr_antes_subem
+          else:
+             op_isr_ajuste = payslip.acum_subsidio_aplicado
+          isr_retener = isr_retener - op_isr_ajuste
+       else:
+          isr_retener = isr_retener - payslip.acum_isr_antes_subem + payslip.acum_subsidio_aplicado
+   else:
+          if payslip.acum_subsidio_aplicado > subsidio_empleo:
+             isr_retener = isr_retener - (payslip.acum_subsidio_aplicado - subsidio_empleo)
+else:
+   subsidio_pagado = isr_tarifa_113 - (subsidio_empleo / contract.tablas_cfdi_id.imss_mes) * payslip.dias_pagar
+   total = isr_tarifa_113 
+   total2 = subsidio_pagado
+
+if inputs.ISR2:
+   result =  inputs.ISR2.amount
+else:
+   if payslip.ultima_nomina and payslip.isr_ajustar:
+        if isr_retener < 0:
+            result =  0
+        else:
+            result = round(isr_retener,2)
+   else:
+        if subsidio_pagado < 0:
+            result =  0
+        else:
+            if total2 < 0:
+               result = abs(round(total,2))
+            else:
+               result = abs(round(total2,2))
+","ISR para nomina ordinaria","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR (sp)","","","","False","False","0.0","","505","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_126_c5970f3f","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","ISR3","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+
+grabado_mensual = contract.sueldo_diario*30.4 + categories.ALW/7 *30.4
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+#subsidio mensual
+#subsidio_pagado = isr_tarifa_113 - subsidio_empleo
+total = (isr_tarifa_113 / payslip.imss_mes) * payslip.imss_dias
+
+result = total","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Subsidio aplicado","","","","False","False","0.0","","505","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_153_6ad95f1b","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","ISR2","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+monto_percepciones = TPERG/365*contract.tablas_cfdi_id.imss_mes
+
+grabado_mensual = monto_percepciones + contract.sueldo_diario * contract.tablas_cfdi_id.imss_mes
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+grabado_mensual2 = contract.sueldo_diario * contract.tablas_cfdi_id.imss_mes
+
+if contract.tablas_cfdi_id:
+    line3 = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line3:
+       limite_inferior2 = line3.lim_inf
+       cuota_fija2 = line3.c_fija
+       porcentaje_sobre_excedente2 = line3.s_excedente
+    line4 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line4:
+       subsidio_empleo2 = line4.s_mensual
+	   
+#articulo 113
+excedente_limite_superior2 = grabado_mensual2 - limite_inferior2
+impuesto_marginal2 = excedente_limite_superior2 * porcentaje_sobre_excedente2/100
+isr_tarifa_113_2 = impuesto_marginal2 + cuota_fija2
+
+
+isr_mensual = isr_tarifa_113 - isr_tarifa_113_2
+
+if TPERG > 0 :
+   result = TPERG * isr_mensual / monto_percepciones
+else:
+   result = 0","ISR para nomina ordinaria","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR (sp) PTU","","","","False","False","0.0","","505","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_221_990e74d2","hr_payroll.DED","DED","Python Expression","if payslip.nom_liquidacion:
+   result = 1
+else:
+   result = 0","","ISR4","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+monto_percepciones = 0
+
+if rules.PG010:
+   monto_percepciones = monto_percepciones + PG010
+if rules.PG004:
+   monto_percepciones = monto_percepciones + PG004
+
+fraccion1 = monto_percepciones / 365 * contract.tablas_cfdi_id.imss_mes
+
+grabado_mensual = fraccion1 + contract.sueldo_diario * contract.tablas_cfdi_id.imss_mes
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+fraccion2 = impuesto_marginal + cuota_fija
+
+grabado_mensual2 = contract.sueldo_diario * contract.tablas_cfdi_id.imss_mes
+
+if contract.tablas_cfdi_id:
+    line3 = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual2)],order='lim_inf desc',limit=1)
+    if line3:
+       limite_inferior2 = line3.lim_inf
+       cuota_fija2 = line3.c_fija
+       porcentaje_sobre_excedente2 = line3.s_excedente
+    line4 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual2)],order='lim_inf desc',limit=1)
+    if line4:
+       subsidio_empleo2 = line4.s_mensual
+	   
+#articulo 113
+excedente_limite_superior2 = grabado_mensual2 - limite_inferior2
+impuesto_marginal2 = excedente_limite_superior2 * porcentaje_sobre_excedente2/100
+isr_tarifa_113_2 = impuesto_marginal2 + cuota_fija2
+
+fraccion3 = fraccion2 - isr_tarifa_113_2
+
+if fraccion1 > 0:
+   fraccion5 = fraccion3 / fraccion1
+   result =fraccion5 * monto_percepciones
+else:
+   result = 0","ISR para nomina de liquidación","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR Art. 174 RLISR","","","","False","False","0.0","","505","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_310_92c8a236","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","ISR2","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+dias_periodo_mes = 0
+dias_periodo = 0
+
+if contract.periodicidad_pago == '02' and payslip.isr_ajustar:
+   dias_periodo_mes = payslip.dias_periodo
+   dias_periodo = 7 * float(payslip.no_nomina)
+else:
+   dias_periodo_mes = contract.tablas_cfdi_id.imss_mes
+   dias_periodo = payslip.dias_pagar
+
+#grabado_mensual
+grabado_mensual = TPERG 
+
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line:
+       limite_inferior = line.lim_inf
+       cuota_fija = line.c_fija
+       porcentaje_sobre_excedente = line.s_excedente
+    line2 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    if line2:
+       subsidio_empleo = line2.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+total = isr_tarifa_113
+
+result = abs(total)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR mensual","","","","False","False","0.0","","505","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_421_960e7e35","hr_payroll.DED","DED","Python Expression","limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+work =  0
+
+if TPERG > 0:
+      work = 1
+
+if not payslip.nom_liquidacion and payslip.ultima_nomina and payslip.isr_ajustar and work > 0:
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+   line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+   if line2:
+      dias_periodo = line2.no_dias
+   else:
+      dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+   grabado_mensual = TPERG + payslip.acum_per_grav
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+      line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+   if line:
+      limite_inferior = line.lim_inf
+      cuota_fija = line.c_fija
+      porcentaje_sobre_excedente = line.s_excedente
+
+   if line3:
+      subsidio_empleo = line3.s_mensual
+
+   #articulo 113
+   excedente_limite_superior = grabado_mensual - limite_inferior
+   impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+   isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+   op_isr_ajuste = 0
+   op_ajuste_subem_causado = 0
+   op_ajuste_subem = 0
+   desc_dev_isr = 0
+   desc_isr_ret_subem_entregado = 0
+   desc_dev_subem = 0
+   subem_entregar =  0
+   factor01 = 0
+   isr_retener = 0
+
+   if isr_tarifa_113 > subsidio_empleo:
+      isr_retener = isr_tarifa_113 - subsidio_empleo
+      isr_retener = isr_retener - payslip.acum_isr
+      if payslip.acum_subsidio_aplicado > 0 and subsidio_empleo == 0:
+          if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+             desc_isr_ret_subem_entregado = payslip.acum_isr_antes_subem
+             desc_dev_subem = payslip.acum_subsidio_aplicado - payslip.acum_isr_antes_subem
+          else:
+             desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado
+          if subsidio_empleo == 0:
+             if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+                op_isr_ajuste = payslip.acum_isr_antes_subem
+             else:
+                op_isr_ajuste = payslip.acum_subsidio_aplicado
+             if payslip.acum_subsidio_aplicado > 0:
+                op_ajuste_subem_causado =  payslip.acum_subsidio_aplicado
+      elif payslip.acum_subsidio_aplicado > 0 and subsidio_empleo > 0:
+             if payslip.acum_subsidio_aplicado > subsidio_empleo:
+                desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado - subsidio_empleo
+                op_isr_ajuste = payslip.acum_subsidio_aplicado - subsidio_empleo
+                op_ajuste_subem_causado = payslip.acum_subsidio_aplicado - subsidio_empleo
+             else:
+                result = 0
+      else:
+         result = 0
+   else:
+      subem_entregar = subsidio_empleo - isr_tarifa_113
+      if payslip.acum_isr_antes_subem > payslip.acum_subsidio_aplicado:
+         factor01 = payslip.acum_isr_antes_subem
+      else:
+         factor01 = payslip.acum_subsidio_aplicado
+      subem_entregar = factor01 - payslip.acum_isr_antes_subem - subem_entregar
+
+   if op_isr_ajuste > 0 and not payslip.isr_anual:
+     result = 1
+   else:
+     result = 0
+else:
+   result = 0","","D060","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+if line2:
+   dias_periodo = line2.no_dias
+else:
+   dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+grabado_mensual = TPERG + payslip.acum_per_grav
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+if line:
+    limite_inferior = line.lim_inf
+    cuota_fija = line.c_fija
+    porcentaje_sobre_excedente = line.s_excedente
+
+if line3:
+    subsidio_empleo = line3.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+op_isr_ajuste = 0
+op_ajuste_subem_causado = 0
+op_ajuste_subem = 0
+desc_dev_isr = 0
+desc_isr_ret_subem_entregado = 0
+desc_dev_subem = 0
+subem_entregar =  0
+factor01 = 0
+isr_retener = 0
+
+if isr_tarifa_113 > subsidio_empleo:
+   isr_retener = isr_tarifa_113 - subsidio_empleo
+   isr_retener = isr_retener - payslip.acum_isr
+   if payslip.acum_subsidio_aplicado > 0 and subsidio_empleo == 0:
+       if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+          desc_isr_ret_subem_entregado = payslip.acum_isr_antes_subem
+          desc_dev_subem = payslip.acum_subsidio_aplicado - payslip.acum_isr_antes_subem
+       else:
+          desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado
+       if subsidio_empleo == 0:
+          if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+             op_isr_ajuste = payslip.acum_isr_antes_subem
+          else:
+             op_isr_ajuste = payslip.acum_subsidio_aplicado
+          if payslip.acum_subsidio_aplicado > 0:
+             op_ajuste_subem_causado =  payslip.acum_subsidio_aplicado
+   elif payslip.acum_subsidio_aplicado > 0 and subsidio_empleo > 0:
+          if payslip.acum_subsidio_aplicado > subsidio_empleo:
+             desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado - subsidio_empleo
+             op_isr_ajuste = payslip.acum_subsidio_aplicado - subsidio_empleo
+             op_ajuste_subem_causado = payslip.acum_subsidio_aplicado - subsidio_empleo
+          else:
+             result = 0
+   else:
+      result = 0
+else:
+   subem_entregar = subsidio_empleo - isr_tarifa_113
+   if payslip.acum_isr_antes_subem > payslip.acum_subsidio_aplicado:
+      factor01 = payslip.acum_isr_antes_subem
+   else:
+      factor01 = payslip.acum_subsidio_aplicado
+   subem_entregar = factor01 - payslip.acum_isr_antes_subem - subem_entregar
+
+result = op_isr_ajuste","ISR para nomina ordinaria","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR (sp) ajuste","","","","False","False","0.0","","506","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_425_069d5dfa","hr_payroll.DED","DED","Python Expression","limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+work =  0
+
+if TPERG > 0:
+      work = 1
+
+if not payslip.nom_liquidacion and payslip.ultima_nomina and payslip.isr_ajustar and work > 0:
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+   line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+   if line2:
+      dias_periodo = line2.no_dias
+   else:
+      dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+   grabado_mensual = TPERG + payslip.acum_per_grav
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+      line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+   if line:
+      limite_inferior = line.lim_inf
+      cuota_fija = line.c_fija
+      porcentaje_sobre_excedente = line.s_excedente
+
+   if line3:
+      subsidio_empleo = line3.s_mensual
+
+   #articulo 113
+   excedente_limite_superior = grabado_mensual - limite_inferior
+   impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+   isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+   op_isr_ajuste = 0
+   op_ajuste_subem_causado = 0
+   op_ajuste_subem = 0
+   desc_dev_isr = 0
+   desc_isr_ret_subem_entregado = 0
+   desc_dev_subem = 0
+   subem_entregar =  0
+   factor01 = 0
+   isr_retener = 0
+
+   if isr_tarifa_113 > subsidio_empleo:
+      isr_retener = isr_tarifa_113 - subsidio_empleo
+      isr_retener = isr_retener - payslip.acum_isr
+      if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+          op_ajuste_subem = payslip.acum_subsidio_aplicado - payslip.acum_isr_antes_subem
+   else:
+      subem_entregar = subsidio_empleo - isr_tarifa_113
+      if payslip.acum_isr_antes_subem > payslip.acum_subsidio_aplicado:
+         factor01 = payslip.acum_isr_antes_subem
+      else:
+         factor01 = payslip.acum_subsidio_aplicado
+      subem_entregar = factor01 - payslip.acum_isr_antes_subem - subem_entregar
+
+   if op_ajuste_subem > 0 or subem_entregar > 0: 
+     result = 1
+   else:
+     result = 0
+else:
+   result = 0","","D061","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+if line2:
+   dias_periodo = line2.no_dias
+else:
+   dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+grabado_mensual = TPERG + payslip.acum_per_grav
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+if line:
+    limite_inferior = line.lim_inf
+    cuota_fija = line.c_fija
+    porcentaje_sobre_excedente = line.s_excedente
+
+if line3:
+    subsidio_empleo = line3.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+op_ajuste_subem = 0
+subem_entregar =  0
+factor01 = 0
+
+if isr_tarifa_113 > subsidio_empleo:
+   if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+      op_ajuste_subem = payslip.acum_subsidio_aplicado - payslip.acum_isr_antes_subem
+else:
+   subem_entregar = subsidio_empleo - isr_tarifa_113
+   if payslip.acum_isr_antes_subem > payslip.acum_subsidio_aplicado:
+      factor01 = payslip.acum_isr_antes_subem
+   else:
+      factor01 = payslip.acum_subsidio_aplicado
+   subem_entregar = factor01 - payslip.acum_isr_antes_subem - subem_entregar
+
+if op_ajuste_subem > 0:
+   result = op_ajuste_subem
+else:
+   result = subem_entregar","ISR para nomina ordinaria","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Ajuste en Subsidio para el empleo (efectivamente entregado al trabajador)","","","","False","False","0.0","","507","Todo el monto","catalogos.deduccion71","Python Code",""
+"__export__.hr_salary_rule_423_5d072534","hr_payroll.DED","DED","Python Expression","limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+work =  0
+
+if TPERG > 0:
+      work = 1
+
+if not payslip.nom_liquidacion and payslip.ultima_nomina and payslip.isr_ajustar and work > 0:
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+   line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+   if line2:
+      dias_periodo = line2.no_dias
+   else:
+      dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+   grabado_mensual = TPERG + payslip.acum_per_grav
+   if contract.tablas_cfdi_id:
+      line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+      line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+   if line:
+      limite_inferior = line.lim_inf
+      cuota_fija = line.c_fija
+      porcentaje_sobre_excedente = line.s_excedente
+
+   if line3:
+      subsidio_empleo = line3.s_mensual
+
+   #articulo 113
+   excedente_limite_superior = grabado_mensual - limite_inferior
+   impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+   isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+   op_isr_ajuste = 0
+   op_ajuste_subem_causado = 0
+   op_ajuste_subem = 0
+   desc_dev_isr = 0
+   desc_isr_ret_subem_entregado = 0
+   desc_dev_subem = 0
+   subem_entregar =  0
+   factor01 = 0
+   isr_retener = 0
+
+   if isr_tarifa_113 > subsidio_empleo:
+      isr_retener = isr_tarifa_113 - subsidio_empleo
+      isr_retener = isr_retener - payslip.acum_isr
+      if payslip.acum_subsidio_aplicado > 0 and subsidio_empleo == 0:
+          if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+             desc_isr_ret_subem_entregado = payslip.acum_isr_antes_subem
+             desc_dev_subem = payslip.acum_subsidio_aplicado - payslip.acum_isr_antes_subem
+          else:
+             desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado
+          if subsidio_empleo == 0:
+             if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+                op_isr_ajuste = payslip.acum_isr_antes_subem
+             else:
+                op_isr_ajuste = payslip.acum_subsidio_aplicado
+             if payslip.acum_subsidio_aplicado > 0:
+                op_ajuste_subem_causado =  payslip.acum_subsidio_aplicado
+      elif payslip.acum_subsidio_aplicado > 0 and subsidio_empleo > 0:
+             if payslip.acum_subsidio_aplicado > subsidio_empleo:
+                desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado - subsidio_empleo
+                op_isr_ajuste = payslip.acum_subsidio_aplicado - subsidio_empleo
+                op_ajuste_subem_causado = payslip.acum_subsidio_aplicado - subsidio_empleo
+             else:
+                result = 0
+      else:
+         result = 0
+   else:
+      subem_entregar = subsidio_empleo - isr_tarifa_113
+      if payslip.acum_isr_antes_subem > payslip.acum_subsidio_aplicado:
+         factor01 = payslip.acum_isr_antes_subem
+      else:
+         factor01 = payslip.acum_subsidio_aplicado
+      subem_entregar = factor01 - payslip.acum_isr_antes_subem - subem_entregar
+
+   if op_ajuste_subem_causado > 0 and not payslip.isr_anual:
+     result = 1
+   else:
+     result = 0
+else:
+   result = 0","","D062","#leer tablas
+limite_inferior = 0
+cuota_fija = 0
+porcentaje_sobre_excedente = 0
+subsidio_empleo = 0
+dias_laborados = 0
+grabado_mensual = 0
+
+#########################################################
+##################  #dias del periodo   ####################### 
+#########################################################
+line2 = contract.env['tablas.periodo.mensual'].search([('form_id','=',contract.tablas_cfdi_id.id),('mes','=',payslip.mes)],limit=1)
+if line2:
+   dias_periodo = line2.no_dias
+else:
+   dias_periodo = 0
+
+#########################################################
+##################  #grabado_mensual   #####################  
+#########################################################
+grabado_mensual = TPERG + payslip.acum_per_grav
+if contract.tablas_cfdi_id:
+    line = contract.env['tablas.general.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+    line3 = contract.env['tablas.subsidio.line'].search([('form_id','=',contract.tablas_cfdi_id.id),('lim_inf','<=',grabado_mensual)],order='lim_inf desc',limit=1)
+
+if line:
+    limite_inferior = line.lim_inf
+    cuota_fija = line.c_fija
+    porcentaje_sobre_excedente = line.s_excedente
+
+if line3:
+    subsidio_empleo = line3.s_mensual
+	   
+#articulo 113
+excedente_limite_superior = grabado_mensual - limite_inferior
+impuesto_marginal = excedente_limite_superior * porcentaje_sobre_excedente/100
+isr_tarifa_113 = impuesto_marginal + cuota_fija
+
+op_isr_ajuste = 0
+op_ajuste_subem_causado = 0
+op_ajuste_subem = 0
+desc_dev_isr = 0
+desc_isr_ret_subem_entregado = 0
+desc_dev_subem = 0
+subem_entregar =  0
+factor01 = 0
+isr_retener = 0
+
+if isr_tarifa_113 > subsidio_empleo:
+   isr_retener = isr_tarifa_113 - subsidio_empleo
+   isr_retener = isr_retener - payslip.acum_isr
+   if payslip.acum_subsidio_aplicado > 0 and subsidio_empleo == 0:
+       if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+          desc_isr_ret_subem_entregado = payslip.acum_isr_antes_subem
+          desc_dev_subem = payslip.acum_subsidio_aplicado - payslip.acum_isr_antes_subem
+       else:
+          desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado
+       if subsidio_empleo == 0:
+          if payslip.acum_subsidio_aplicado > payslip.acum_isr_antes_subem:
+             op_isr_ajuste = payslip.acum_isr_antes_subem
+          else:
+             op_isr_ajuste = payslip.acum_subsidio_aplicado
+          if payslip.acum_subsidio_aplicado > 0:
+             op_ajuste_subem_causado =  payslip.acum_subsidio_aplicado
+   elif payslip.acum_subsidio_aplicado > 0 and subsidio_empleo > 0:
+          if payslip.acum_subsidio_aplicado > subsidio_empleo:
+             desc_isr_ret_subem_entregado = payslip.acum_subsidio_aplicado - subsidio_empleo
+             op_isr_ajuste = payslip.acum_subsidio_aplicado - subsidio_empleo
+             op_ajuste_subem_causado = payslip.acum_subsidio_aplicado - subsidio_empleo
+          else:
+             result = 0
+   else:
+      result = 0
+else:
+   subem_entregar = subsidio_empleo - isr_tarifa_113
+   if payslip.acum_isr_antes_subem > payslip.acum_subsidio_aplicado:
+      factor01 = payslip.acum_isr_antes_subem
+   else:
+      factor01 = payslip.acum_subsidio_aplicado
+   subem_entregar = factor01 - payslip.acum_isr_antes_subem - subem_entregar
+
+result = op_ajuste_subem_causado","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Ajuste subsidio causado","","","","False","False","0.0","","508","Todo el monto","catalogos.deduccion107","Python Code",""
+"__export__.hr_salary_rule_22","hr_payroll.DED","DED","Python Expression","if contract.sueldo_diario <= contract.tablas_cfdi_id.salario_minimo:
+   result = 0
+else:
+   result = 1","","D002","dias_laborados = 0
+dias_completos = 0
+dias_trabajo = 0
+
+dias_completos = payslip.imss_dias
+dias_laborados =  dias_completos
+
+if worked_days.WORK100:
+   dias_trabajo = dias_trabajo + worked_days.WORK100.number_of_days
+if worked_days.SEPT:
+   dias_trabajo = dias_trabajo + worked_days.SEPT.number_of_days
+if worked_days.FJC:
+   dias_trabajo = dias_trabajo + worked_days.FJC.number_of_days
+
+if dias_trabajo > 0.01:
+   if worked_days.FI:
+      dias_laborados = dias_laborados - worked_days.FI.number_of_days
+   if worked_days.FJS:
+      dias_laborados = dias_laborados - worked_days.FJS.number_of_days
+   if worked_days.FR:
+      dias_laborados = dias_laborados - worked_days.FR.number_of_days
+   if worked_days.INC_MAT:
+      dias_laborados = dias_laborados - worked_days.INC_MAT.number_of_days
+      dias_completos = dias_completos - worked_days.INC_MAT.number_of_days
+   if worked_days.INC_EG:
+      dias_laborados = dias_laborados - worked_days.INC_EG.number_of_days
+      dias_completos = dias_completos - worked_days.INC_EG.number_of_days
+   if worked_days.INC_RT:
+      dias_laborados = dias_laborados - worked_days.INC_RT.number_of_days
+      dias_completos = dias_completos - worked_days.INC_RT.number_of_days
+else:
+   dias_laborados = 0
+   dias_completos = 0
+
+dias_periodo = 0
+line = contract.env['tablas.periodo.bimestral'].search([('form_id','=',contract.tablas_cfdi_id.id),('dia_fin','>=',payslip.date_to),('dia_inicio','<=',payslip.date_to)],limit=1)
+if line:
+   dias_periodo = line.no_dias/8
+
+#cuota del IMSS parte del Empleado
+if contract.sueldo_base_cotizacion < 25 * contract.tablas_cfdi_id.uma:
+   salario_cotizado = contract.sueldo_base_cotizacion
+else:
+   salario_cotizado = 25 * contract.tablas_cfdi_id.uma
+
+uma3 =  contract.tablas_cfdi_id.uma * 3
+
+prestaciones = salario_cotizado * contract.tablas_cfdi_id.enf_mat_prestaciones_e/100 * dias_completos
+invalli_y_vida = salario_cotizado * contract.tablas_cfdi_id.inv_vida_e/100 * dias_laborados
+cesantia_y_vejez = salario_cotizado * contract.tablas_cfdi_id.cesantia_vejez_e/100 * dias_laborados
+pensio_y_benefi = salario_cotizado * contract.tablas_cfdi_id.enf_mat_gastos_med_e/100 *dias_completos
+
+#seguro_enfermedad_maternidad
+excedente = salario_cotizado - uma3
+base_cotizacion = excedente * contract.tablas_cfdi_id.enf_mat_excedente_e/100
+seg_enf_mat = base_cotizacion * dias_completos
+
+if contract.sueldo_base_cotizacion < uma3:
+  prestaciones = prestaciones + pensio_y_benefi
+else:
+  prestaciones = prestaciones + pensio_y_benefi + abs(seg_enf_mat)
+
+if inputs.IMSS:
+   result = inputs.IMSS.amount
+else:
+   result = invalli_y_vida + prestaciones + cesantia_y_vejez","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","IMSS","","","","False","False","0.0","","510","Todo el monto","catalogos.deduccion01","Python Code",""
+"__export__.hr_salary_rule_389_b40ffe2c","hr_payroll.DED","DED","Python Expression","if inputs.D003:
+   result =  1
+else:
+   result = 0","","D003","if inputs.D003:
+   result = inputs.D003.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Cuota caja de ahorro","","","","False","False","0.0","","515","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_396_d9c8ba87","hr_payroll.DED","DED","Python Expression","if inputs.D004:
+   result =  1
+else:
+   result = 0","","D004","if inputs.D004:
+   result = inputs.D004.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Descuento préstamo caja","","","","False","False","0.0","","520","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_397_d8ea0ab4","hr_payroll.DED","DED","Python Expression","if inputs.D005:
+   result =  1
+else:
+   result = 0","","D005","if inputs.D005:
+   result = inputs.D005.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Interés préstamo caja","","","","False","False","0.0","","525","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_398_d8de0103","hr_payroll.DED","DED","Python Expression","if inputs.D007:
+   result =  1
+else:
+   result = 0","","D007","if inputs.D007:
+   result = inputs.D007.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Descuento préstamo personal","","","","False","False","0.0","","530","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_399_83c49c88","hr_payroll.DED","DED","Python Expression","if inputs.D008:
+   result =  1
+else:
+   result = 0","","D008","if inputs.D008:
+   result = inputs.D008.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Pago reposición credencial","","","","False","False","0.0","","535","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_74_bb15e36b","hr_payroll.DED","DED","Python Expression","if contract.pens_alim > 0:
+   result =1>0
+else:
+   result = 0>1","","D010","if rules.P030:
+   result =  (P001 + P030 - ISR2 - D052 - D053) * contract.pens_alim/100
+else:
+   result =  (P001 - ISR2 - D052 - D053) * contract.pens_alim/100","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Pensión alimenticia","","","","False","False","0.0","","540","Todo el monto","catalogos.deduccion07","Python Code",""
+"__export__.hr_salary_rule_172_ec7b98be","hr_payroll.DED","DED","Python Expression","if inputs.D011:
+   result =  1>0
+else:
+   result = 0>1","","D011","if inputs.D011:
+   result = inputs.D011.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Descuento faltante material","","","","False","False","0.0","","545","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_400_ff01dab2","hr_payroll.DED","DED","Python Expression","if inputs.D014:
+   result =  1
+else:
+   result = 0","","D014","if inputs.D014:
+   result = inputs.D014.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Deudores diversos","","","","False","False","0.0","","550","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_401_5acfc45a","hr_payroll.DED","DED","Python Expression","if inputs.D019:
+   result =  1
+else:
+   result = 0","","D019","if inputs.D019:
+   result = inputs.D019.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Ajuste FONACOT","","","","False","False","0.0","","555","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_402_f197ad64","hr_payroll.DED","DED","Python Expression","if inputs.D021:
+   if inputs.D021.amount > 0:
+      result = 1
+   else:
+      result = 0","","D021","if inputs.D021:
+   result = inputs.D021.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Descuento faltante efectivo","","","","False","False","0.0","","560","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_88_269aea74","hr_payroll.DED","DED","Python Expression","if inputs.D032:
+   if inputs.D032.amount > 0:
+      result = 1
+   else:
+      result = 0","","D032","if inputs.D032:
+   result = inputs.D032.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Descuento otros","","","","False","False","0.0","","565","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_403_1aa8c1b7","hr_payroll.DED","DED","Python Expression","if inputs.D040:
+   if inputs.D040.amount > 0:
+      result = 1 > 0
+   else:
+      result = 0 > 1","","D040","if inputs.D040:
+   result = inputs.D040.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Viaticos","","","","False","False","0.0","","570","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_404_058d885f","hr_payroll.DED","DED","Python Expression","if inputs.D092:
+   if inputs.D092.amount > 0:
+      result = 1 > 0
+   else:
+      result = 0 > 1","","D092","if inputs.D092:
+   result = inputs.D092.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Amortización INFONAVIT","","","","False","False","0.0","","575","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_72_d2570f37","hr_payroll.DED","DED","Python Expression","if inputs.D093 or contract.prestamo_fonacot > 0:
+   result =  1
+else:
+   result = 0","","D093","total = 0
+if inputs.D093:
+   total = inputs.D093.amount
+if contract.prestamo_fonacot > 0:
+   total = contract.prestamo_fonacot
+
+result = total","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Crédito FONACOT","","","","False","False","0.0","","580","Todo el monto","catalogos.deduccion11","Python Code",""
+"__export__.hr_salary_rule_23","hr_payroll.DED","DED","Python Expression","if contract.infonavit_fijo > 0 or inputs.INFONAVIT:
+   if TPER == 0:
+      result = 0
+   else:
+      result = 1
+else:
+   result = 0","","D094","dias_periodo = 0
+line = contract.env['tablas.periodo.bimestral'].search([('form_id','=',contract.tablas_cfdi_id.id),('dia_fin','>=',payslip.date_to),('dia_inicio','<=',payslip.date_to)],limit=1)
+
+if line:
+   dias_periodo = line.no_dias
+
+dias_laborados = 0
+
+if worked_days.WORK100:
+   dias_laborados = worked_days.WORK100.number_of_days
+if worked_days.FJC:
+   dias_laborados = dias_laborados + worked_days.FJC.number_of_days
+if worked_days.VAC:
+   dias_laborados = dias_laborados + worked_days.VAC.number_of_days
+if worked_days.SEPT:
+   dias_laborados = dias_laborados + worked_days.SEPT.number_of_days
+
+if inputs.INFONAVIT:
+   result =  inputs.INFONAVIT.amount
+else:
+   result = ((contract.infonavit_fijo + 15) / 2) / 30.4 * dias_laborados
+
+
+#   result = int(round((contract.infonavit_fijo * 2 + 15) / dias_periodo * payslip.dias_pagar))","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Crédito Infonavit (cuota fija)","","","","False","False","0.0","","585","Todo el monto","catalogos.deduccion10","Python Code",""
+"__export__.hr_salary_rule_24","hr_payroll.DED","DED","Python Expression","if contract.infonavit_porc > 0:
+   if TPER == 0:
+      result = 0
+   else:
+      result = 1
+else:
+   result = 0","","D094","dias_periodo = 0
+line = contract.env['tablas.periodo.bimestral'].search([('form_id','=',contract.tablas_cfdi_id.id),('dia_fin','>=',payslip.date_to),('dia_inicio','<=',payslip.date_to)],limit=1)
+if line:
+   dias_periodo = line.no_dias
+
+dias_laborados = 0
+
+if worked_days.WORK100:
+   dias_laborados = worked_days.WORK100.number_of_days
+if worked_days.FJC:
+   dias_laborados = dias_laborados + worked_days.FJC.number_of_days
+if worked_days.VAC:
+   dias_laborados = dias_laborados + worked_days.VAC.number_of_days
+if worked_days.SEPT:
+   dias_laborados = dias_laborados + worked_days.SEPT.number_of_days
+
+#result = ((contract.sueldo_base_cotizacion * contract.infonavit_porc/100 * dias_periodo) + 15 ) / dias_periodo * dias_laborados
+
+result = ((contract.sueldo_base_cotizacion * contract.infonavit_porc/100  + 15 ) / 2 ) / 30.4 * dias_laborados","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Crédito Infonavit (SBC)","","","","False","False","0.0","","585","Todo el monto","catalogos.deduccion10","Python Code",""
+"__export__.hr_salary_rule_26","hr_payroll.DED","DED","Python Expression","if contract.infonavit_vsm > 0:
+   if TPER == 0:
+      result = 0
+   else:
+      result = 1
+else:
+   result = 0 ","","D094","dias_periodo = 0
+dias_mes = 0
+line = contract.env['tablas.periodo.bimestral'].search([('form_id','=',contract.tablas_cfdi_id.id),('dia_fin','>=',payslip.date_to),('dia_inicio','<=',payslip.date_to)],limit=1)
+if line:
+   dias_periodo = line.no_dias
+
+mes_actual = contract.env['tablas.periodo.mensual'].search([('mes', '=', payslip.mes)],limit=1)
+if mes_actual:
+   dias_mes = mes_actual.no_dias
+
+dias_laborados = 0
+if worked_days.WORK100:
+   dias_laborados = worked_days.WORK100.number_of_days
+if worked_days.FJC:
+   dias_laborados = dias_laborados + worked_days.FJC.number_of_days
+if worked_days.VAC:
+   dias_laborados = dias_laborados + worked_days.VAC.number_of_days
+if worked_days.SEPT:
+   dias_laborados = dias_laborados + worked_days.SEPT.number_of_days
+
+result = ((contract.infonavit_vsm * contract.tablas_cfdi_id.umi + 15) / 2 ) / 30.4 * dias_laborados","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Crédito Infonavit (VSM)","","","","False","False","0.0","","585","Todo el monto","catalogos.deduccion10","Python Code",""
+"__export__.hr_salary_rule_69_7aa6213e","hr_payroll.DED","DED","Python Expression","if contract.infonavit_fijo > 0 or contract.infonavit_vsm > 0 or contract.infonavit_porc > 0:
+   result = 1
+else:
+   result = 0","","D091","if contract.infonavit_fijo > 0 or contract.infonavit_vsm > 0 or contract.infonavit_porc > 0:
+  result = 15
+else:
+  result = 0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Seguro de vivienda infonavit","","","","False","False","0.0","","586","Todo el monto","catalogos.deduccion10","Python Code",""
+"__export__.hr_salary_rule_405_dad9020a","hr_payroll.DED","DED","Python Expression","if inputs.D095:
+   result = 1
+else:
+   result = 0","","D095","result = inputs.D096.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Ajuste INFONAVIT bim. anterior","","","","False","False","0.0","","590","Todo el monto","catalogos.deduccion05","Python Code",""
+"__export__.hr_salary_rule_406_d33b72ba","hr_payroll.DED","DED","Python Expression","if inputs.D096:
+   result = 1
+else:
+   result = 0","","D096","result = inputs.D096.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Adeudo INFONAVIT","","","","False","False","0.0","","595","Todo el monto","catalogos.deduccion05","Python Code",""
+"__export__.hr_salary_rule_407_1666ebe0","hr_payroll.DED","DED","Python Expression","if inputs.D098:
+   if inputs.D098.amount:
+      result = 1
+   else:
+      result = 0","","D098","result = inputs.D098.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR a compensar","","","","False","False","0.0","","605","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_408_54e0c0ab","hr_payroll.DED","DED","Python Expression","if inputs.D203:
+   if inputs.D203.amount:
+      result = 1
+   else:
+      result = 0","","D203","result = inputs.D203.amount","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR por indemnización","","","","False","False","0.0","","615","Todo el monto","catalogos.deduccion02","Python Code",""
+"__export__.hr_salary_rule_306_96dfc4a4","hr_payroll.DED","DED","Python Expression","if inputs.D204:
+   if inputs.D204.amount > 0:
+      result = 1
+   else:
+      result = 0","","D204","if inputs.D204:
+   result = inputs.D204.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","ISR retenido de ejercicio anterior","catalogo.otropago05","","","False","False","0.0","","618","Todo el monto","catalogos.deduccion101","Python Code",""
+"nomina_cfdi_extras_ee.dev_emp_loan_installment","hr_payroll.DED","DED","Always True","result = (payslip.installment_amount or 0)","","390","result = (payslip.installment_amount or 0)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Préstamo","","","","False","False","0.0","","390","Todo el monto","catalogos.deduccion04","Python Code",""
+"dev_hr_loan.dev_emp_loan_interest_installment","hr_payroll.DED","DED","Python Expression","result = (payslip.installment_int or 0)","","D051","result = (payslip.installment_int or 0)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Interés préstamo","","","","False","False","0.0","","625","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_392_049ef61b","hr_payroll.DED","DED","Python Expression","result = (payslip.descuento1_amount or 0)","","D052","result = (payslip.descuento1_amount or 0)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Descuento periodico 1","","","","False","False","0.0","","630","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_394_adcdd8fc","hr_payroll.DED","DED","Python Expression","result = (payslip.descuento1_int or 0)","","D053","result = (payslip.descuento1_int or 0)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Interés descuento periodico 1","","","","False","False","0.0","","635","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_393_662f5ad4","hr_payroll.DED","DED","Python Expression","result = (payslip.descuento2_amount or 0)","","D054","result = (payslip.descuento2_amount or 0)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Descuento periodico 2","","","","False","False","0.0","","640","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_395_21198531","hr_payroll.DED","DED","Python Expression","result = (payslip.descuento2_int or 0)","","D055","result = (payslip.descuento2_int or 0)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Interés descuento periodico 2","","","","False","False","0.0","","645","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_169_7a01a0e2","hr_payroll.DED","DED","Python Expression","if contract.vale_despensa:
+   result = 1
+else:
+   result = 0","","D056","result = int(round((contract.tablas_cfdi_id.uma * 0.20 * 365 /12 ) / 2))","","False","Efectivo","1.0","","","False","False","contract.wage","0.0","Descuento vale de comida","","","","False","False","0.0","","650","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_124_36212b01","hr_payroll.DED","DED","Python Expression","if inputs.D057:
+   result =  1
+else:
+   result = 0","","D057","if inputs.D057:
+   result = inputs.D057.amount
+else:
+   result =0","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Fallecimiento","","","","False","False","0.0","","655","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_36","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","TDED","result = categories.DED","","False","","0.0","","","False","False","contract.wage","0.0","Total deducciones","","","","False","False","0.0","","699","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_410_2e34a808","hr_payroll.DED","DED","Python Expression","total = 0
+neto = 0
+neto = categories.BASIC + categories.ALW + categories.ALW3 - categories.DED
+
+if rules.P019:
+   neto = neto - P019
+
+if rules.P032:
+   neto = neto - P032
+
+completo = round(neto,2)
+entero = int(neto)
+
+decimales = completo - entero
+
+if decimales < 0.10:
+   total = 1
+if decimales > 0.10 and decimales < 0.20:
+   total = 0
+if decimales > 0.20 and decimales < 0.30:
+   total = 1
+if decimales > 0.30 and decimales < 0.40:
+   total =0
+if decimales > 0.40 and decimales < 0.50:
+   total = 1
+if decimales > 0.50 and decimales < 0.60:
+   total = 0
+if decimales > 0.60 and decimales < 0.70:
+   total = 1
+if decimales > 0.70 and decimales < 0.80:
+   total = 0
+if decimales > 0.80 and decimales < 0.90:
+   total = 1
+if decimales > 0.90:
+   total = 0
+
+result = total","","D099","total = 0
+neto = 0
+neto = categories.BASIC + categories.ALW + categories.ALW3 - categories.DED
+
+if rules.P019:
+   neto = neto - P019
+
+if rules.P032:
+   neto = neto - P032
+
+completo = round(neto,2)
+entero = int(neto)
+
+decimales = completo - entero
+
+if decimales < 0.10:
+   total = decimales - 0.0
+if decimales > 0.10 and decimales < 0.20:
+   total = decimales - 0.20
+if decimales > 0.20 and decimales < 0.30:
+   total = decimales - 0.20
+if decimales > 0.30 and decimales < 0.40:
+   total = decimales - 0.40
+if decimales > 0.40 and decimales < 0.50:
+   total = decimales - 0.40
+if decimales > 0.50 and decimales < 0.60:
+   total = decimales - 0.60
+if decimales > 0.60 and decimales < 0.70:
+   total = decimales - 0.60
+if decimales > 0.70 and decimales < 0.80:
+   total = decimales - 0.80
+if decimales > 0.80 and decimales < 0.90:
+   total = decimales - 0.80
+if decimales > 0.90:
+   total = decimales - 1.0
+
+result = total","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Ajuste al neto","","","","False","False","0.0","","890","Todo el monto","catalogos.deduccion04","Python Code",""
+"__export__.hr_salary_rule_409_6172aa1a","hr_payroll.ALW","ALW","Python Expression","total = 0
+neto = 0
+neto = categories.BASIC + categories.ALW + categories.ALW3 - categories.DED
+
+if rules.P019:
+   neto = neto - P019
+
+if rules.P032:
+   neto = neto - P032
+
+completo = round(neto,2)
+entero = int(neto)
+
+decimales = completo - entero
+
+if decimales < 0.10:
+   total = 0
+if decimales > 0.10 and decimales < 0.20:
+   total = 1
+if decimales > 0.20 and decimales < 0.30:
+   total = 0
+if decimales > 0.30 and decimales < 0.40:
+   total =1
+if decimales > 0.40 and decimales < 0.50:
+   total = 0
+if decimales > 0.50 and decimales < 0.60:
+   total = 1
+if decimales > 0.60 and decimales < 0.70:
+   total = 0
+if decimales > 0.70 and decimales < 0.80:
+   total = 1
+if decimales > 0.80 and decimales < 0.90:
+   total = 0
+if decimales > 0.90:
+   total = 1
+
+result = total","","P044","total = 0
+neto = 0
+neto = categories.BASIC + categories.ALW + categories.ALW3 - categories.DED
+
+if rules.P019:
+   neto = neto - P019
+
+if rules.P032:
+   neto = neto - P032
+
+completo = round(neto,2)
+entero = int(neto)
+
+decimales = completo - entero
+
+if decimales < 0.10:
+   total = 0.0 - decimales
+if decimales > 0.10 and decimales < 0.20:
+   total = 0.20 - decimales
+if decimales > 0.20 and decimales < 0.30:
+   total = 0.20 - decimales
+if decimales > 0.30 and decimales < 0.40:
+   total = 0.40 - decimales
+if decimales > 0.40 and decimales < 0.50:
+   total = 0.40 - decimales
+if decimales > 0.50 and decimales < 0.60:
+   total = 0.60 - decimales
+if decimales > 0.60 and decimales < 0.70:
+   total = 0.60 - decimales
+if decimales > 0.70 and decimales < 0.80:
+   total = 0.80 - decimales
+if decimales > 0.80 and decimales < 0.90:
+   total = 0.80 - decimales
+if decimales > 0.90:
+   total = 1.0 - decimales
+
+result = total","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Ajuste al neto","","","","False","False","0.0","","891","Todo el monto","","Python Code","catalogo.percepciones33"
+"__export__.hr_salary_rule_184_61367129","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","EFECT","total = 0
+total = categories.BASIC + categories.ALW + categories.ALW3 - categories.DED
+
+result = total","","False","","0.0","","","False","False","contract.wage","0.0","Sueldo neto en efectivo","","","","False","False","0.0","","899","Todo el monto","","Python Code",""
+"__export__.hr_salary_rule_371_0f0734af","__export__.hr_salary_rule_category_13_7bbe7f60","AUX","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","NET","result = categories.BASIC + categories.ALW  + categories.ALW3 - categories.DED","","False","","0.0","","","False","False","contract.wage","0.0","Sueldo neto","","","","False","False","0.0","","900","Todo el monto","","Python Code",""
+"nomina_cfdi_extras_ee.dev_emp_loan_interest_installment","hr_payroll.DED","DED","Always True","
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days
+                    # inputs: object containing the computed inputs
+
+                    # Note: returned value have to be set in the variable 'result'
+
+                    result = rules.NET > categories.NET * 0.10","","391","result = (payslip.installment_int or 0)","","False","Efectivo","0.0","","","False","False","contract.wage","0.0","Interés del préstamo","","","","False","False","0.0","","391","Todo el monto","","Python Code",""
